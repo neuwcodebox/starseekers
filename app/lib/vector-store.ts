@@ -1,11 +1,13 @@
 import { Pinecone, type PineconeRecord } from "@pinecone-database/pinecone";
-import { embedBatch, embedText } from "./embeddings";
+import { embedBatch } from "./embeddings";
 import { StarredRepo, hashText } from "./github";
 
 const indexName = process.env.PINECONE_INDEX ?? "starseekers";
 // Pinecone upsert requests are limited to 2MB; batch uploads to stay below the limit.
 const UPSERT_BATCH_SIZE = 40;
 const EMBEDDING_BATCH_SIZE = 20;
+const LIST_PAGE_LIMIT = 1000;
+const FETCH_BATCH_SIZE = 100;
 
 function getClient() {
   if (!process.env.PINECONE_API_KEY) {
@@ -53,6 +55,35 @@ async function fetchExistingRecords(
   }
 
   return known;
+}
+
+async function getUserAssociatedRecords(index: ReturnType<Pinecone["Index"]>, userId: string) {
+  const associatedRecords = new Map<string, string[]>();
+  let paginationToken: string | undefined;
+
+  do {
+    const listed = await index.listPaginated({ limit: LIST_PAGE_LIMIT, paginationToken });
+    const ids = (listed.vectors ?? [])
+      .map((vector) => vector.id)
+      .filter((id): id is string => Boolean(id));
+
+    for (let i = 0; i < ids.length; i += FETCH_BATCH_SIZE) {
+      const slice = ids.slice(i, i + FETCH_BATCH_SIZE);
+      const fetched = await index.fetch(slice);
+
+      Object.values(fetched.records ?? {}).forEach((record) => {
+        const starredBy = (record.metadata?.starredBy as string[] | undefined) ?? [];
+
+        if (starredBy.includes(userId)) {
+          associatedRecords.set(record.id, starredBy);
+        }
+      });
+    }
+
+    paginationToken = listed.pagination?.next;
+  } while (paginationToken);
+
+  return associatedRecords;
 }
 
 export type VectorSearchResult = {
@@ -168,31 +199,20 @@ export async function upsertRepositories(
   }
 
   // Remove user association from repositories that are no longer starred
-  const probeVector =
-    records[0]?.values ??
-    (await embedText("probe vector"));
-
-  const existingUserAssociations = await index.query({
-    vector: probeVector,
-    topK: 10000,
-    filter: { starredBy: { $in: [userId] } },
-    includeMetadata: true,
-  });
-
-  const detaches = (existingUserAssociations.matches ?? []).filter(
-    (match) => !currentRepoIdSet.has(match.id)
+  const existingUserAssociations = await getUserAssociatedRecords(index, userId);
+  const detaches = Array.from(existingUserAssociations.entries()).filter(
+    ([id]) => !currentRepoIdSet.has(id)
   );
 
   if (detaches.length > 0) {
     await Promise.all(
-      detaches.map((match) => {
-        const starredBy = (match.metadata?.starredBy as string[] | undefined) ?? [];
-        const updatedStarredBy = starredBy.filter((id) => id !== userId);
+      detaches.map(([id, starredBy]) => {
+        const updatedStarredBy = starredBy.filter((starId) => starId !== userId);
         const metadata: Record<string, string[]> = {
           starredBy: updatedStarredBy,
         };
 
-        return index.update({ id: match.id, metadata });
+        return index.update({ id, metadata });
       })
     );
   }
