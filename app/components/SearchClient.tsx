@@ -22,7 +22,8 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
   const { data: session, status } = useSession();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [message, setMessage] = useState<string | null>(null);
+  const [searchMessage, setSearchMessage] = useState<string | null>(null);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState<SyncProgress | null>(null);
@@ -44,12 +45,12 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
 
   async function triggerSync() {
     setSyncing(true);
-    setMessage(null);
+    setSyncMessage(null);
     setProgress({ label: "Fetching starred repositories..." });
     try {
       const response = await fetch("/api/sync", { method: "POST" });
       if (!response.body) {
-        setMessage("Unable to open sync stream.");
+        setSyncMessage("Unable to open sync stream.");
         return;
       }
 
@@ -89,12 +90,12 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
               break;
             }
             case "complete": {
-              setMessage(`Updated ${event.synced} embeddings (total stored: ${event.total})`);
+              setSyncMessage(`Updated ${event.synced} embeddings (total stored: ${event.total})`);
               setProgress({ label: "Sync complete", percent: 100 });
               break;
             }
             case "error": {
-              setMessage(event.message ?? "Sync failed");
+              setSyncMessage(event.message ?? "Sync failed");
               setProgress(null);
               break;
             }
@@ -104,7 +105,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
         }
       }
     } catch (error) {
-      setMessage(`Sync error: ${String(error)}`);
+      setSyncMessage(`Sync error: ${String(error)}`);
     } finally {
       setSyncing(false);
       setTimeout(() => setProgress(null), 1500);
@@ -113,12 +114,12 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
 
   async function runSearch() {
     if (!query.trim()) {
-      setMessage("Enter a search query.");
+      setSearchMessage("Enter a search query.");
       return;
     }
     setLoading(true);
     setHasSearched(true);
-    setMessage(null);
+    setSearchMessage(null);
     try {
       const response = await fetch("/api/search", {
         method: "POST",
@@ -127,13 +128,13 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
       });
       const body = await response.json();
       if (!response.ok) {
-        setMessage(body.error ?? "Search failed");
+        setSearchMessage(body.error ?? "Search failed");
         setResults([]);
         return;
       }
       setResults(body.results ?? []);
     } catch (error) {
-      setMessage(`Search error: ${String(error)}`);
+      setSearchMessage(`Search error: ${String(error)}`);
       setResults([]);
     } finally {
       setLoading(false);
@@ -143,17 +144,29 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
   return (
     <div className="app-layout">
       <aside className="sidebar">
-        <h3>Repository sync</h3>
-        <p className="meta-text" style={{ margin: 0 }}>
-          Keep your starred repository metadata up to date.
-        </p>
-        <div className="sidebar-actions">
-          <button className="button" onClick={triggerSync} disabled={syncing}>
-            {syncing ? "Syncing..." : "Sync starred repositories"}
-          </button>
-          <button className="button-ghost" onClick={() => signOut()}>
-            Sign out
-          </button>
+        <div className="sidebar-section">
+          <h3>Repository sync</h3>
+          <p className="meta-text" style={{ margin: 0 }}>
+            Keep your starred repository metadata up to date.
+          </p>
+
+          {progress && (
+            <div className="progress">
+              <div className="progress-bar" style={{ width: `${progress.percent ?? 25}%` }} />
+              <div className="progress-label">{progress.label}</div>
+            </div>
+          )}
+
+          {syncMessage && <div className="info-banner">{syncMessage}</div>}
+
+          <div className="sidebar-actions">
+            <button className="button" onClick={triggerSync} disabled={syncing}>
+              {syncing ? "Syncing..." : "Sync starred repositories"}
+            </button>
+            <button className="button-ghost" onClick={() => signOut()}>
+              Sign out
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -190,14 +203,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
           </button>
         </div>
 
-        {progress && (
-          <div className="progress">
-            <div className="progress-bar" style={{ width: `${progress.percent ?? 25}%` }} />
-            <div className="progress-label">{progress.label}</div>
-          </div>
-        )}
-
-        {message && <div className="info-banner">{message}</div>}
+        {searchMessage && <div className="info-banner">{searchMessage}</div>}
 
         <div className="result-meta">
           <span>
