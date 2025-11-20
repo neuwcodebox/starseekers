@@ -172,18 +172,22 @@ export async function upsertRepositories(
     records[0]?.values ??
     (await embedText("probe vector"));
 
-  const existingUserAssociations = await index.query({
-    vector: probeVector,
-    topK: 10000,
-    filter: { starredBy: { $in: [userId] } },
-    includeMetadata: true,
-  });
+  while (true) {
+    const existingUserAssociations = await index.query({
+      vector: probeVector,
+      topK: 10000,
+      filter: { starredBy: { $in: [userId] } },
+      includeMetadata: true,
+    });
 
-  const detaches = (existingUserAssociations.matches ?? []).filter(
-    (match) => !currentRepoIdSet.has(match.id)
-  );
+    const detaches = (existingUserAssociations.matches ?? []).filter(
+      (match) => !currentRepoIdSet.has(match.id)
+    );
 
-  if (detaches.length > 0) {
+    if (detaches.length === 0) {
+      break;
+    }
+
     await Promise.all(
       detaches.map((match) => {
         const starredBy = (match.metadata?.starredBy as string[] | undefined) ?? [];
