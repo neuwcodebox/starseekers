@@ -4,7 +4,7 @@ let client: OpenAI | null = null;
 
 function getClient() {
   if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY가 설정되어 있지 않습니다.");
+    throw new Error("OPENAI_API_KEY is not configured.");
   }
 
   if (!client) {

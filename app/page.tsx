@@ -5,50 +5,121 @@ import { authOptions } from "./api/auth/[...nextauth]/options";
 
 export default async function Home() {
   const session = await getServerSession(authOptions);
+  const isAuthed = Boolean(session);
 
   return (
-    <div className="stack">
-      <section className="panel stack">
-        <div className="stack">
-          <h2>GitHub 별표 저장소 의미 검색</h2>
-          <p className="meta">
-            로그인 후 별표한 저장소를 동기화하면 벡터 검색으로 원하는 라이브러리를 더 쉽게
-            찾을 수 있습니다. README까지 인덱싱하지 않고 설명/토픽/언어를 이용한 임베딩만
-            사용해 가벼운 토이 프로젝트 형태로 구성했습니다.
-          </p>
+    <div>
+      <header className="topbar">
+        <div className="brand">
+          <span className="star">★</span>
+          <span>starseekers</span>
         </div>
-        <div className="button-row">
-          {!session && (
+        <div className="nav-actions">
+          {!isAuthed && (
             <Link href="/api/auth/signin">
-              <button>GitHub OAuth 로그인</button>
+              <button className="button">Sign in</button>
             </Link>
           )}
-          {session && (
+          {isAuthed && (
             <Link href="/api/auth/signout">
-              <button className="secondary">로그아웃</button>
+              <button className="button-ghost">Sign out</button>
             </Link>
           )}
-          <span className="badge">OpenAI 임베딩 + Pinecone</span>
-          <span className="badge">사용자별 네임스페이스</span>
         </div>
-      </section>
+      </header>
 
-      <SearchClient isAuthed={Boolean(session)} />
+      {!isAuthed && (
+        <>
+          <section className="hero">
+            <div className="hero-copy">
+              <h1>Search your GitHub stars by meaning</h1>
+              <p>
+                Forget exact repo names—describe the stack, use case, or what you remember and
+                starseekers will surface the right repositories from your stars.
+              </p>
+              <div className="hero-actions">
+                <Link href="/api/auth/signin">
+                  <button className="button">Sign in with GitHub</button>
+                </Link>
+                <a className="button-ghost" href="#demo">
+                  View demo
+                </a>
+              </div>
+              <div className="hero-hint">We only read starred repository metadata—no write access.</div>
+            </div>
 
-      <section className="panel stack">
-        <h3>환경 변수</h3>
-        <ul>
-          <li>GITHUB_ID / GITHUB_SECRET: OAuth 앱에서 발급</li>
-          <li>OPENAI_API_KEY: text-embedding-3-small 사용</li>
-          <li>PINECONE_API_KEY, PINECONE_INDEX: 벡터 인덱스 설정</li>
-          <li>NEXTAUTH_SECRET, NEXTAUTH_URL: NextAuth 세션을 위해 필요</li>
-        </ul>
-        <p className="meta">
-          최초 동기화 시 모든 별표 저장소에 대한 임베딩을 생성하고, 이후 설명/토픽이
-          변경된 것만 해시 비교로 갱신합니다. 검색은 사용자 네임스페이스에서만 수행해
-          개인별 결과가 섞이지 않습니다.
-        </p>
-      </section>
+            <div className="mock-panel" id="demo">
+              <div className="mock-search">
+                <div className="search-bar">
+                  <div className="search-input-wrapper">
+                    <span className="input-icon">🔍</span>
+                    <input
+                      className="input"
+                      placeholder="e.g. fast API template with Redis cache"
+                      disabled
+                    />
+                  </div>
+                </div>
+                <div className="glow-card">
+                  <h4>
+                    <span className="pill">owner / orbit-kit</span>
+                    <span className="badge">⭐ 2,140</span>
+                  </h4>
+                  <p>TypeScript monorepo boilerplate with tRPC, Prisma, and Next.js</p>
+                  <div className="chip-row">
+                    <span className="chip">next.js</span>
+                    <span className="chip">auth</span>
+                    <span className="chip">template</span>
+                  </div>
+                </div>
+                <div className="glow-card">
+                  <h4>
+                    <span className="pill">owner / nova-agent</span>
+                    <span className="badge">⭐ 980</span>
+                  </h4>
+                  <p>LLM agent starter with LangChain, Redis cache, and FastAPI</p>
+                  <div className="chip-row">
+                    <span className="chip">python</span>
+                    <span className="chip">langchain</span>
+                    <span className="chip">llm</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="hero" id="how-it-works">
+            <div className="hero-copy">
+              <h2 className="section-title">A focused flow, nothing extra</h2>
+              <p className="meta-text">
+                Sign in with GitHub → sync starred repositories → semantic search. We skip README
+                parsing and embed descriptions, topics, and language for a lightweight experience.
+              </p>
+              <div className="hero-actions">
+                <span className="pill">OpenAI embeddings</span>
+                <span className="pill">Pinecone vectors</span>
+                <span className="pill">Per-user namespace</span>
+              </div>
+            </div>
+            <div className="mock-panel">
+              <div className="glow-card">
+                <h4>🔄 Sync</h4>
+                <p>Quickly fetch metadata for your starred repositories.</p>
+              </div>
+              <div className="glow-card">
+                <h4>🧠 Embed</h4>
+                <p>Vectorize descriptions and topics into your personal space.</p>
+              </div>
+              <div className="glow-card">
+                <h4>🔍 Search</h4>
+                <p>Search in natural language and jump straight to GitHub.</p>
+              </div>
+            </div>
+          </section>
+        </>
+      )}
+
+      {isAuthed && <SearchClient isAuthed={isAuthed} />}
     </div>
   );
 }
