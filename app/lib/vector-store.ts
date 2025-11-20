@@ -1,4 +1,4 @@
-import { Pinecone } from "@pinecone-database/pinecone";
+import { Pinecone, type PineconeRecord } from "@pinecone-database/pinecone";
 import { embedText } from "./embeddings";
 import { StarredRepo, hashText } from "./github";
 
@@ -16,6 +16,16 @@ type ExistingRecord = {
   starredBy?: string[];
 };
 
+type RepoMetadata = {
+  fullName: string;
+  description: string;
+  htmlUrl: string;
+  hash: string;
+  starredBy: string[];
+  topics: string[];
+  language?: string;
+};
+
 async function fetchExistingRecords(
   repoIds: string[]
 ): Promise<Record<string, ExistingRecord>> {
@@ -25,7 +35,7 @@ async function fetchExistingRecords(
 
   for (let i = 0; i < repoIds.length; i += 100) {
     const slice = repoIds.slice(i, i + 100);
-    const existing = await index.fetch({ ids: slice });
+    const existing = await index.fetch(slice);
     Object.entries(existing.records ?? {}).forEach(([id, record]) => {
       const hash = record.metadata?.hash as string | undefined;
       const starredBy = record.metadata?.starredBy as string[] | undefined;
@@ -63,11 +73,7 @@ export async function upsertRepositories(userId: string, repos: StarredRepo[]) {
   const known = await fetchExistingRecords(repoIds);
   const currentRepoIdSet = new Set(repoIds);
 
-  const records = [] as {
-    id: string;
-    values: number[];
-    metadata: Record<string, unknown>;
-  }[];
+  const records: PineconeRecord<RepoMetadata>[] = [];
 
   const metadataUpdates: { id: string; starredBy: string[] }[] = [];
 
@@ -81,24 +87,29 @@ export async function upsertRepositories(userId: string, repos: StarredRepo[]) {
 
     if (existing?.hash === hash) {
       if (!hadUser) {
-        metadataUpdates.push({ id: repo.id.toString(), starredBy: [...starredBy] });
+        metadataUpdates.push({ id: repo.id.toString(), starredBy: Array.from(starredBy) });
       }
       continue;
     }
 
     const values = await embedText(text);
+    const metadata: RepoMetadata = {
+      fullName: repo.fullName,
+      description: repo.description,
+      htmlUrl: repo.htmlUrl,
+      topics: repo.topics,
+      hash,
+      starredBy: Array.from(starredBy),
+    };
+
+    if (repo.language) {
+      metadata.language = repo.language;
+    }
+
     records.push({
       id: repo.id.toString(),
       values,
-      metadata: {
-        fullName: repo.fullName,
-        description: repo.description,
-        htmlUrl: repo.htmlUrl,
-        language: repo.language,
-        topics: repo.topics,
-        hash,
-        starredBy: [...starredBy],
-      },
+      metadata,
     });
   }
 
@@ -109,7 +120,7 @@ export async function upsertRepositories(userId: string, repos: StarredRepo[]) {
   if (metadataUpdates.length > 0) {
     await Promise.all(
       metadataUpdates.map((update) =>
-        index.update({ id: update.id, setMetadata: { starredBy: update.starredBy } })
+        index.update({ id: update.id, metadata: { starredBy: update.starredBy } })
       )
     );
   }
@@ -135,7 +146,7 @@ export async function upsertRepositories(userId: string, repos: StarredRepo[]) {
       detaches.map((match) => {
         const starredBy = (match.metadata?.starredBy as string[] | undefined) ?? [];
         const updatedStarredBy = starredBy.filter((id) => id !== userId);
-        return index.update({ id: match.id, setMetadata: { starredBy: updatedStarredBy } });
+        return index.update({ id: match.id, metadata: { starredBy: updatedStarredBy } });
       })
     );
   }
