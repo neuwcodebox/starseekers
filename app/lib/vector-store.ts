@@ -11,22 +11,25 @@ function getClient() {
   return new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
 }
 
-async function fetchExistingHashes(
-  userId: string,
+type ExistingRecord = {
+  hash?: string;
+  starredBy?: string[];
+};
+
+async function fetchExistingRecords(
   repoIds: string[]
-): Promise<Record<string, string>> {
+): Promise<Record<string, ExistingRecord>> {
   const client = getClient();
-  const index = client.Index(indexName).namespace(userId);
-  const known: Record<string, string> = {};
+  const index = client.Index(indexName);
+  const known: Record<string, ExistingRecord> = {};
 
   for (let i = 0; i < repoIds.length; i += 100) {
     const slice = repoIds.slice(i, i + 100);
     const existing = await index.fetch({ ids: slice });
     Object.entries(existing.records ?? {}).forEach(([id, record]) => {
       const hash = record.metadata?.hash as string | undefined;
-      if (hash) {
-        known[id] = hash;
-      }
+      const starredBy = record.metadata?.starredBy as string[] | undefined;
+      known[id] = { hash, starredBy };
     });
   }
 
@@ -55,9 +58,10 @@ export async function upsertRepositories(userId: string, repos: StarredRepo[]) {
   }
 
   const client = getClient();
-  const index = client.Index(indexName).namespace(userId);
+  const index = client.Index(indexName);
   const repoIds = repos.map((repo) => repo.id.toString());
-  const known = await fetchExistingHashes(userId, repoIds);
+  const known = await fetchExistingRecords(repoIds);
+  const currentRepoIdSet = new Set(repoIds);
 
   const records = [] as {
     id: string;
@@ -65,10 +69,20 @@ export async function upsertRepositories(userId: string, repos: StarredRepo[]) {
     metadata: Record<string, unknown>;
   }[];
 
+  const metadataUpdates: { id: string; starredBy: string[] }[] = [];
+
   for (const repo of repos) {
     const text = buildEmbeddingText(repo);
     const hash = hashText(text);
-    if (known[repo.id.toString()] === hash) {
+    const existing = known[repo.id.toString()];
+    const starredBy = new Set(existing?.starredBy ?? []);
+    const hadUser = starredBy.has(userId);
+    starredBy.add(userId);
+
+    if (existing?.hash === hash) {
+      if (!hadUser) {
+        metadataUpdates.push({ id: repo.id.toString(), starredBy: [...starredBy] });
+      }
       continue;
     }
 
@@ -77,19 +91,53 @@ export async function upsertRepositories(userId: string, repos: StarredRepo[]) {
       id: repo.id.toString(),
       values,
       metadata: {
-        userId,
         fullName: repo.fullName,
         description: repo.description,
         htmlUrl: repo.htmlUrl,
         language: repo.language,
         topics: repo.topics,
         hash,
+        starredBy: [...starredBy],
       },
     });
   }
 
   if (records.length > 0) {
     await index.upsert(records);
+  }
+
+  if (metadataUpdates.length > 0) {
+    await Promise.all(
+      metadataUpdates.map((update) =>
+        index.update({ id: update.id, setMetadata: { starredBy: update.starredBy } })
+      )
+    );
+  }
+
+  // Remove user association from repositories that are no longer starred
+  const probeVector =
+    records[0]?.values ??
+    (await embedText("probe vector"));
+
+  const existingUserAssociations = await index.query({
+    vector: probeVector,
+    topK: 10000,
+    filter: { starredBy: { $in: [userId] } },
+    includeMetadata: true,
+  });
+
+  const detaches = (existingUserAssociations.matches ?? []).filter(
+    (match) => !currentRepoIdSet.has(match.id)
+  );
+
+  if (detaches.length > 0) {
+    await Promise.all(
+      detaches.map((match) => {
+        const starredBy = (match.metadata?.starredBy as string[] | undefined) ?? [];
+        const updatedStarredBy = starredBy.filter((id) => id !== userId);
+        return index.update({ id: match.id, setMetadata: { starredBy: updatedStarredBy } });
+      })
+    );
   }
 
   return records.length;
@@ -101,12 +149,12 @@ export async function queryByEmbedding(
   topK = 8
 ): Promise<VectorSearchResult[]> {
   const client = getClient();
-  const index = client.Index(indexName).namespace(userId);
+  const index = client.Index(indexName);
   const response = await index.query({
     vector,
     topK,
     includeMetadata: true,
-    filter: { userId },
+    filter: { starredBy: { $in: [userId] } },
   });
 
   return (
