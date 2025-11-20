@@ -152,7 +152,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
       <aside className="sidebar">
         <h3>Repository sync</h3>
         <p className="meta-text" style={{ margin: 0 }}>
-          별표한 저장소 메타데이터를 최신 상태로 유지하세요.
+          Keep your starred repository metadata up to date.
         </p>
         <div className="sidebar-actions">
           <button className="button" onClick={triggerSync} disabled={syncing}>
