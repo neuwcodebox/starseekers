@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 
 type SyncProgress = {
@@ -30,18 +30,6 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
   const [hasSearched, setHasSearched] = useState(false);
 
   const disabled = status === "loading" || !isAuthed;
-
-  const userTag = useMemo(() => {
-    if (!session?.user) return null;
-    return (
-      <div className="user-tag">
-        <div>
-          <div>{session.user.name ?? session.user.email}</div>
-          <div style={{ color: "var(--text-muted)", fontSize: 12 }}>Connected to GitHub</div>
-        </div>
-      </div>
-    );
-  }, [session?.user]);
 
   async function triggerSync() {
     setSyncing(true);
@@ -173,7 +161,6 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
             <h2>Search your stars</h2>
             <p>Use plain language to find starred repositories by description, stack, or use case.</p>
           </div>
-          <div className="search-actions">{userTag}</div>
         </div>
 
         <div className="search-bar">
