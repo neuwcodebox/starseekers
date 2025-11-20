@@ -66,7 +66,6 @@ export default async function Home() {
                       disabled
                     />
                   </div>
-                  <div className="helper-text">새로운 인터페이스로 달라진 검색 미리보기</div>
                 </div>
                 <div className="glow-card">
                   <h4>

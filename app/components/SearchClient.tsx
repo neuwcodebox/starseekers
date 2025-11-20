@@ -243,9 +243,6 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
               disabled={disabled}
             />
           </div>
-          <div className="helper-text">
-            예: “fast API template with Redis cache” 또는 “TypeScript monorepo boilerplate”
-          </div>
         </div>
 
         <div className="search-actions" style={{ marginTop: 12 }}>
