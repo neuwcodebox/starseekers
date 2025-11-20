@@ -238,6 +238,8 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
             results.map((repo) => {
               const [owner, name] = repo.fullName.split("/");
               const language = repo.language?.trim();
+              const topics = repo.topics?.filter(Boolean) ?? [];
+              const hasTopics = topics.length > 0;
               return (
                 <article key={repo.id} className="repo-card">
                   <div className="title-row">
@@ -251,9 +253,14 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
 
                   {repo.description && <p className="description">{repo.description}</p>}
 
-                  {language ? (
+                  {language || hasTopics ? (
                     <div className="repo-meta">
-                      <span className="chip">{language}</span>
+                      {language && <span className="chip">{language}</span>}
+                      {hasTopics && (
+                        <span className="topics-text">
+                          Topics: <span className="topics-list">{topics.join(", ")}</span>
+                        </span>
+                      )}
                     </div>
                   ) : null}
                 </article>
