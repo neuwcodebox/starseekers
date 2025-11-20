@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useMemo, useState } from "react";
 import { signOut, useSession } from "next-auth/react";
 
@@ -33,14 +32,8 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
 
   const userTag = useMemo(() => {
     if (!session?.user) return null;
-    const avatar = session.user.image ? (
-      <Image src={session.user.image} alt="avatar" className="small-avatar" width={32} height={32} />
-    ) : (
-      <div className="small-avatar" style={{ background: "rgba(255,255,255,0.08)" }} />
-    );
     return (
       <div className="user-tag">
-        {avatar}
         <div>
           <div>{session.user.name ?? session.user.email}</div>
           <div style={{ color: "var(--text-muted)", fontSize: 12 }}>Connected to GitHub</div>
@@ -192,7 +185,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
             />
           </div>
 
-          <button className="button" onClick={runSearch} disabled={disabled || loading}>
+          <button className="button search-button" onClick={runSearch} disabled={disabled || loading}>
             {loading ? "Searching..." : "Search"}
           </button>
         </div>
@@ -258,7 +251,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
                       {language && <span className="chip">{language}</span>}
                       {hasTopics && (
                         <span className="topics-text">
-                          Topics: <span className="topics-list">{topics.join(", ")}</span>
+                          <span className="topics-list">{topics.join(" • ")}</span>
                         </span>
                       )}
                     </div>
