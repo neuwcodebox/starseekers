@@ -1,10 +1,11 @@
 import { Pinecone, type PineconeRecord } from "@pinecone-database/pinecone";
-import { embedText } from "./embeddings";
+import { embedBatch, embedText } from "./embeddings";
 import { StarredRepo, hashText } from "./github";
 
 const indexName = process.env.PINECONE_INDEX ?? "starseekers";
 // Pinecone upsert requests are limited to 2MB; batch uploads to stay below the limit.
 const UPSERT_BATCH_SIZE = 40;
+const EMBEDDING_BATCH_SIZE = 20;
 
 function getClient() {
   if (!process.env.PINECONE_API_KEY) {
@@ -26,6 +27,12 @@ type RepoMetadata = {
   starredBy: string[];
   topics: string[];
   language?: string;
+};
+
+export type SyncProgressUpdate = {
+  phase: "embedding" | "upserting";
+  completed: number;
+  total: number;
 };
 
 async function fetchExistingRecords(
@@ -64,7 +71,11 @@ function buildEmbeddingText(repo: StarredRepo) {
   return `${repo.fullName}\n${repo.description}${languageLine}${topicLine}`;
 }
 
-export async function upsertRepositories(userId: string, repos: StarredRepo[]) {
+export async function upsertRepositories(
+  userId: string,
+  repos: StarredRepo[],
+  onProgress?: (update: SyncProgressUpdate) => void
+) {
   if (!repos.length) {
     return 0;
   }
@@ -76,8 +87,13 @@ export async function upsertRepositories(userId: string, repos: StarredRepo[]) {
   const currentRepoIdSet = new Set(repoIds);
 
   const records: PineconeRecord<RepoMetadata>[] = [];
-
   const metadataUpdates: { id: string; starredBy: string[] }[] = [];
+
+  const toEmbed: {
+    repo: StarredRepo;
+    hash: string;
+    starredBy: Set<string>;
+  }[] = [];
 
   for (const repo of repos) {
     const text = buildEmbeddingText(repo);
@@ -94,31 +110,45 @@ export async function upsertRepositories(userId: string, repos: StarredRepo[]) {
       continue;
     }
 
-    const values = await embedText(text);
-    const metadata: RepoMetadata = {
-      fullName: repo.fullName,
-      description: repo.description,
-      htmlUrl: repo.htmlUrl,
-      topics: repo.topics,
-      hash,
-      starredBy: Array.from(starredBy),
-    };
+    toEmbed.push({ repo, hash, starredBy });
+  }
 
-    if (repo.language) {
-      metadata.language = repo.language;
-    }
+  let embeddedCount = 0;
+  for (let i = 0; i < toEmbed.length; i += EMBEDDING_BATCH_SIZE) {
+    const batch = toEmbed.slice(i, i + EMBEDDING_BATCH_SIZE);
+    const values = await embedBatch(batch.map((item) => buildEmbeddingText(item.repo)));
 
-    records.push({
-      id: repo.id.toString(),
-      values,
-      metadata,
+    values.forEach((embedding, index) => {
+      const item = batch[index];
+      const metadata: RepoMetadata = {
+        fullName: item.repo.fullName,
+        description: item.repo.description,
+        htmlUrl: item.repo.htmlUrl,
+        topics: item.repo.topics,
+        hash: item.hash,
+        starredBy: Array.from(item.starredBy),
+      };
+
+      if (item.repo.language) {
+        metadata.language = item.repo.language;
+      }
+
+      records.push({
+        id: item.repo.id.toString(),
+        values: embedding,
+        metadata,
+      });
     });
+
+    embeddedCount += batch.length;
+    onProgress?.({ phase: "embedding", completed: embeddedCount, total: toEmbed.length });
   }
 
   if (records.length > 0) {
     for (let i = 0; i < records.length; i += UPSERT_BATCH_SIZE) {
       const batch = records.slice(i, i + UPSERT_BATCH_SIZE);
       await index.upsert(batch);
+      onProgress?.({ phase: "upserting", completed: Math.min(i + UPSERT_BATCH_SIZE, records.length), total: records.length });
     }
   }
 
