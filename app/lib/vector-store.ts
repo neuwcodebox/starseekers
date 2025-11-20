@@ -16,7 +16,7 @@ function getClient() {
 
 type ExistingRecord = {
   hash?: string;
-  starredBy?: string[];
+  starredBy?: number[];
 };
 
 type RepoMetadata = {
@@ -24,7 +24,7 @@ type RepoMetadata = {
   description: string;
   htmlUrl: string;
   hash: string;
-  starredBy: string[];
+  starredBy: number[];
   topics: string[];
   language?: string;
 };
@@ -34,6 +34,18 @@ export type SyncProgressUpdate = {
   completed: number;
   total: number;
 };
+
+function toNumberArray(values: unknown): number[] | undefined {
+  if (!Array.isArray(values)) {
+    return undefined;
+  }
+
+  const numericValues = values
+    .map((value) => (typeof value === "number" ? value : Number(value)))
+    .filter((value): value is number => Number.isFinite(value));
+
+  return numericValues.length > 0 ? numericValues : [];
+}
 
 async function fetchExistingRecords(
   repoIds: string[]
@@ -47,7 +59,7 @@ async function fetchExistingRecords(
     const existing = await index.fetch(slice);
     Object.entries(existing.records ?? {}).forEach(([id, record]) => {
       const hash = record.metadata?.hash as string | undefined;
-      const starredBy = record.metadata?.starredBy as string[] | undefined;
+      const starredBy = toNumberArray(record.metadata?.starredBy);
       known[id] = { hash, starredBy };
     });
   }
@@ -72,7 +84,7 @@ function buildEmbeddingText(repo: StarredRepo) {
 }
 
 export async function upsertRepositories(
-  userId: string,
+  userId: number,
   repos: StarredRepo[],
   onProgress?: (update: SyncProgressUpdate) => void
 ) {
@@ -87,12 +99,12 @@ export async function upsertRepositories(
   const currentRepoIdSet = new Set(repoIds);
 
   const records: PineconeRecord<RepoMetadata>[] = [];
-  const metadataUpdates: { id: string; starredBy: string[]; hash: string }[] = [];
+  const metadataUpdates: { id: string; starredBy: number[]; hash: string }[] = [];
 
   const toEmbed: {
     repo: StarredRepo;
     hash: string;
-    starredBy: Set<string>;
+    starredBy: Set<number>;
   }[] = [];
 
   for (const repo of repos) {
@@ -186,9 +198,9 @@ export async function upsertRepositories(
   if (detaches.length > 0) {
     await Promise.all(
       detaches.map((match) => {
-        const starredBy = (match.metadata?.starredBy as string[] | undefined) ?? [];
+        const starredBy = toNumberArray(match.metadata?.starredBy) ?? [];
         const updatedStarredBy = starredBy.filter((id) => id !== userId);
-        const metadata: Record<string, string[]> = {
+        const metadata: Pick<RepoMetadata, "starredBy"> = {
           starredBy: updatedStarredBy,
         };
 
@@ -201,7 +213,7 @@ export async function upsertRepositories(
 }
 
 export async function queryByEmbedding(
-  userId: string,
+  userId: number,
   vector: number[],
   topK = 8
 ): Promise<VectorSearchResult[]> {

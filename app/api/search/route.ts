@@ -17,6 +17,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Sign-in required." }, { status: 401 });
   }
 
+  const userId =
+    typeof session.user.id === "number" ? session.user.id : Number(session.user.id);
+
+  if (!Number.isFinite(userId)) {
+    return NextResponse.json({ error: "Invalid GitHub user id." }, { status: 400 });
+  }
+
   const payload = await request.json();
   const parsed = schema.safeParse(payload);
   if (!parsed.success) {
@@ -25,7 +32,7 @@ export async function POST(request: Request) {
 
   const { query, topK = 8 } = parsed.data;
   const embedding = await embedText(query);
-  const results = await queryByEmbedding(session.user.id, embedding, topK);
+  const results = await queryByEmbedding(userId, embedding, topK);
 
   return NextResponse.json({ results });
 }

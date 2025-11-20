@@ -23,6 +23,11 @@ export async function POST() {
   const encoder = new TextEncoder();
 
   const { accessToken, id } = user;
+  const userId = typeof id === "number" ? id : Number(id);
+
+  if (!Number.isFinite(userId)) {
+    return NextResponse.json({ error: "Invalid GitHub user id." }, { status: 400 });
+  }
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -47,7 +52,7 @@ export async function POST() {
           }
         };
 
-        const updated = await upsertRepositories(id, repos, onProgress);
+        const updated = await upsertRepositories(userId, repos, onProgress);
 
         push({ status: "complete", synced: updated, total: repos.length });
       } catch (error) {
