@@ -37,8 +37,21 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
     setProgress({ label: "Fetching starred repositories..." });
     try {
       const response = await fetch("/api/sync", { method: "POST" });
+      if (response.status === 429) {
+        setSyncMessage("Sync request limit exceeded. Please try again soon.");
+        setProgress(null);
+        return;
+      }
+
+      if (!response.ok) {
+        setSyncMessage("Sync failed. Please try again.");
+        setProgress(null);
+        return;
+      }
+
       if (!response.body) {
         setSyncMessage("Unable to open sync stream.");
+        setProgress(null);
         return;
       }
 
@@ -114,9 +127,16 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query }),
       });
-      const body = await response.json();
+      const body = await response.json().catch(() => null);
+
+      if (response.status === 429) {
+        setSearchMessage("Search request limit exceeded. Please try again soon.");
+        setResults([]);
+        return;
+      }
+
       if (!response.ok) {
-        setSearchMessage(body.error ?? "Search failed");
+        setSearchMessage(body?.error ?? "Search failed");
         setResults([]);
         return;
       }
