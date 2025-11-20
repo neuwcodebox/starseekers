@@ -337,6 +337,11 @@ a {
   height: fit-content;
 }
 
+.sidebar-section {
+  display: grid;
+  gap: 12px;
+}
+
 .sidebar h3 {
   margin: 0 0 14px;
   font-size: 14px;
@@ -458,6 +463,10 @@ a {
   overflow: hidden;
   position: relative;
   margin-top: 12px;
+}
+
+.sidebar .progress {
+  margin-top: 0;
 }
 
 .progress-bar {
