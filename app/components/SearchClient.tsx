@@ -191,9 +191,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
               disabled={disabled}
             />
           </div>
-        </div>
 
-        <div className="search-actions" style={{ marginTop: 12 }}>
           <button className="button" onClick={runSearch} disabled={disabled || loading}>
             {loading ? "Searching..." : "Search"}
           </button>
@@ -239,33 +237,30 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
           {!loading &&
             results.map((repo) => {
               const [owner, name] = repo.fullName.split("/");
+              const language = repo.language?.trim();
+              const topics = repo.topics?.filter(Boolean) ?? [];
+              const hasTopics = topics.length > 0;
               return (
                 <article key={repo.id} className="repo-card">
                   <div className="title-row">
-                    <div>
+                    <a className="repo-title" href={repo.htmlUrl} target="_blank" rel="noreferrer">
                       <div className="owner">{owner}</div>
                       <div className="name">{name}</div>
-                    </div>
-                    <a className="button-ghost" href={repo.htmlUrl} target="_blank" rel="noreferrer">
-                      Open on GitHub
                     </a>
+
+                    <span className="score-badge">Score {repo.score.toFixed(3)}</span>
                   </div>
 
                   {repo.description && <p className="description">{repo.description}</p>}
 
-                  <div className="repo-meta">
-                    {repo.language && <span className="chip">{repo.language}</span>}
-                    <span className="score-badge">Score {repo.score.toFixed(3)}</span>
-                    {repo.topics?.length ? <span>{repo.topics.slice(0, 4).join(" · ")}</span> : null}
-                  </div>
-
-                  {repo.topics?.length ? (
-                    <div className="chip-row">
-                      {repo.topics.slice(0, 6).map((topic) => (
-                        <span key={topic} className="chip">
-                          {topic}
+                  {language || hasTopics ? (
+                    <div className="repo-meta">
+                      {language && <span className="chip">{language}</span>}
+                      {hasTopics && (
+                        <span className="topics-text">
+                          Topics: <span className="topics-list">{topics.join(", ")}</span>
                         </span>
-                      ))}
+                      )}
                     </div>
                   ) : null}
                 </article>
