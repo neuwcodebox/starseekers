@@ -191,9 +191,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
               disabled={disabled}
             />
           </div>
-        </div>
 
-        <div className="search-actions" style={{ marginTop: 12 }}>
           <button className="button" onClick={runSearch} disabled={disabled || loading}>
             {loading ? "Searching..." : "Search"}
           </button>
@@ -242,12 +240,9 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
               return (
                 <article key={repo.id} className="repo-card">
                   <div className="title-row">
-                    <div>
+                    <a className="repo-title" href={repo.htmlUrl} target="_blank" rel="noreferrer">
                       <div className="owner">{owner}</div>
                       <div className="name">{name}</div>
-                    </div>
-                    <a className="button-ghost" href={repo.htmlUrl} target="_blank" rel="noreferrer">
-                      Open on GitHub
                     </a>
                   </div>
 

@@ -424,10 +424,17 @@ a {
 
 .search-bar {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  width: 100%;
 }
 
 .search-input-wrapper {
   position: relative;
+  flex: 1;
+  min-width: 240px;
 }
 
 .info-banner {
@@ -504,6 +511,16 @@ a {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+}
+
+.repo-title {
+  display: inline-block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.repo-title .name:hover {
+  text-decoration: underline;
 }
 
 .repo-card .name {
