@@ -87,7 +87,7 @@ export async function upsertRepositories(
   const currentRepoIdSet = new Set(repoIds);
 
   const records: PineconeRecord<RepoMetadata>[] = [];
-  const metadataUpdates: { id: string; starredBy: string[] }[] = [];
+  const metadataUpdates: { id: string; starredBy: string[]; hash: string }[] = [];
 
   const toEmbed: {
     repo: StarredRepo;
@@ -103,9 +103,16 @@ export async function upsertRepositories(
     const hadUser = starredBy.has(userId);
     starredBy.add(userId);
 
-    if (existing?.hash === hash) {
+    const hashUnchanged = existing?.hash === hash;
+
+    if (hashUnchanged) {
+      // If the content hash is unchanged, reuse the stored embedding and only refresh metadata.
       if (!hadUser) {
-        metadataUpdates.push({ id: repo.id.toString(), starredBy: Array.from(starredBy) });
+        metadataUpdates.push({
+          id: repo.id.toString(),
+          starredBy: Array.from(starredBy),
+          hash,
+        });
       }
       continue;
     }
@@ -155,7 +162,7 @@ export async function upsertRepositories(
   if (metadataUpdates.length > 0) {
     await Promise.all(
       metadataUpdates.map((update) =>
-        index.update({ id: update.id, metadata: { starredBy: update.starredBy } })
+        index.update({ id: update.id, metadata: { starredBy: update.starredBy, hash: update.hash } })
       )
     );
   }
@@ -181,7 +188,11 @@ export async function upsertRepositories(
       detaches.map((match) => {
         const starredBy = (match.metadata?.starredBy as string[] | undefined) ?? [];
         const updatedStarredBy = starredBy.filter((id) => id !== userId);
-        return index.update({ id: match.id, metadata: { starredBy: updatedStarredBy } });
+        const metadata: Record<string, string[]> = {
+          starredBy: updatedStarredBy,
+        };
+
+        return index.update({ id: match.id, metadata });
       })
     );
   }
