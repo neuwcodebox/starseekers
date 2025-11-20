@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 
 type SyncProgress = {
   label: string;
@@ -150,67 +150,17 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
   return (
     <div className="app-layout">
       <aside className="sidebar">
-        <h3>Filters</h3>
-        <div className="filter-group">
-          <div className="filter-title">Language</div>
-          <div className="filter-options">
-            {"JavaScript,TypeScript,Python,Go".split(",").map((lang) => (
-              <label className="filter-option" key={lang}>
-                <input type="checkbox" disabled />
-                <span>{lang}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-        <div className="filter-group">
-          <div className="filter-title">Stars</div>
-          <div className="filter-options">
-            {[
-              { value: "100", label: "> 100" },
-              { value: "50-100", label: "50-100" },
-              { value: "<50", label: "< 50" },
-            ].map((option) => (
-              <label className="filter-option" key={option.value}>
-                <input type="radio" name="stars" disabled />
-                <span>{option.label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-        <div className="filter-group">
-          <div className="filter-title">Last updated</div>
-          <div className="filter-options">
-            {["Past month", "Past 6 months", "Past year"].map((label) => (
-              <label className="filter-option" key={label}>
-                <input type="radio" name="updated" disabled />
-                <span>{label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-        <div className="filter-group">
-          <div className="filter-title">Tags</div>
-          <div className="chip-row">
-            <span className="chip">next.js</span>
-            <span className="chip">template</span>
-            <span className="chip">ai</span>
-          </div>
-        </div>
-        <div className="filter-group" style={{ paddingBottom: 0 }}>
-          <div className="filter-title">Connection</div>
-          <div className="filter-options">
-            {!isAuthed && (
-              <button className="button" onClick={() => signIn("github")}>Sign in with GitHub</button>
-            )}
-            {isAuthed && (
-              <div className="search-actions" style={{ flexDirection: "column", alignItems: "stretch" }}>
-                <button className="button" onClick={triggerSync} disabled={syncing}>
-                  {syncing ? "Syncing..." : "Sync starred repositories"}
-                </button>
-                <button className="button-ghost" onClick={() => signOut()}>Sign out</button>
-              </div>
-            )}
-          </div>
+        <h3>Repository sync</h3>
+        <p className="meta-text" style={{ margin: 0 }}>
+          별표한 저장소 메타데이터를 최신 상태로 유지하세요.
+        </p>
+        <div className="sidebar-actions">
+          <button className="button" onClick={triggerSync} disabled={syncing}>
+            {syncing ? "Syncing..." : "Sync starred repositories"}
+          </button>
+          <button className="button-ghost" onClick={() => signOut()}>
+            Sign out
+          </button>
         </div>
       </aside>
 
@@ -221,8 +171,6 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
             <p>Use plain language to find starred repositories by description, stack, or use case.</p>
           </div>
           <div className="search-actions">
-            <span className="pill">Natural language</span>
-            <span className="pill">By example repo</span>
             {userTag}
           </div>
         </div>
@@ -249,8 +197,6 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
           <button className="button" onClick={runSearch} disabled={disabled || loading}>
             {loading ? "Searching..." : "Search"}
           </button>
-          <div className="badge">OpenAI embeddings + Pinecone</div>
-          <div className="badge">Per-user namespace</div>
         </div>
 
         {progress && (
@@ -267,11 +213,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
             Results · {results.length} repositories
             {hasSearched && results.length === 0 && " (no matches)"}
           </span>
-          <select className="select" disabled>
-            <option>Sort: Relevance</option>
-            <option>Stars</option>
-            <option>Last updated</option>
-          </select>
+          <span className="pill">Sorted by relevance</span>
         </div>
 
         <div className="results-grid">
@@ -313,7 +255,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
 
                   <div className="repo-meta">
                     {repo.language && <span className="chip">{repo.language}</span>}
-                    <span>⭐ {repo.score.toFixed(3)}</span>
+                    <span className="score-badge">Score {repo.score.toFixed(3)}</span>
                     {repo.topics?.length ? <span>{repo.topics.slice(0, 4).join(" · ")}</span> : null}
                   </div>
 
