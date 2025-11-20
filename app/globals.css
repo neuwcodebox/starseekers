@@ -47,7 +47,7 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   padding: 14px 20px;
   border: 1px solid var(--border-subtle);
   border-radius: 18px;
@@ -65,8 +65,8 @@ a {
   font-weight: 700;
   font-size: 18px;
   letter-spacing: -0.04em;
-  flex: 1;
-  min-width: 160px;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .brand .star {
@@ -85,7 +85,6 @@ a {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
   margin-left: auto;
   justify-content: flex-end;
 }
@@ -314,18 +313,18 @@ a {
 
   .topbar {
     padding: 12px 14px;
-    gap: 12px;
-    flex-direction: column;
-    align-items: stretch;
+    gap: 10px;
+    flex-direction: row;
+    align-items: center;
   }
 
   .brand {
-    width: 100%;
-    justify-content: space-between;
+    width: auto;
+    justify-content: flex-start;
   }
 
   .nav-actions {
-    width: 100%;
+    width: auto;
     justify-content: flex-end;
   }
 }
@@ -497,7 +496,7 @@ a {
 .repo-card .title-row {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
 }
 
