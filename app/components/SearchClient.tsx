@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
+import { useMemo, useState } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 
 type SyncProgress = {
@@ -26,8 +27,27 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState<SyncProgress | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
 
   const disabled = status === "loading" || !isAuthed;
+
+  const userTag = useMemo(() => {
+    if (!session?.user) return null;
+    const avatar = session.user.image ? (
+      <Image src={session.user.image} alt="avatar" className="small-avatar" width={32} height={32} />
+    ) : (
+      <div className="small-avatar" style={{ background: "rgba(255,255,255,0.08)" }} />
+    );
+    return (
+      <div className="user-tag">
+        {avatar}
+        <div>
+          <div>{session.user.name ?? session.user.email}</div>
+          <div style={{ color: "var(--text-muted)", fontSize: 12 }}>GitHub 연동 완료</div>
+        </div>
+      </div>
+    );
+  }, [session?.user]);
 
   async function triggerSync() {
     setSyncing(true);
@@ -104,6 +124,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
       return;
     }
     setLoading(true);
+    setHasSearched(true);
     setMessage(null);
     try {
       const response = await fetch("/api/search", {
@@ -127,92 +148,192 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
   }
 
   return (
-    <div className="panel stack">
-      <div className="stack">
-        <div className="button-row">
-          {!isAuthed && (
-            <button onClick={() => signIn("github")}>
-              GitHub 로그인 후 시작
-            </button>
-          )}
-          {isAuthed && (
-            <>
-              <button onClick={triggerSync} disabled={syncing}>
-                {syncing ? "동기화 중..." : "별표 목록 동기화"}
-              </button>
-              <button className="secondary" onClick={() => signOut()}>
-                로그아웃
-              </button>
-            </>
-          )}
-        </div>
-        <p className="meta">
-          로그인하면 GitHub OAuth 토큰으로 별표한 저장소를 불러와 임베딩을 갱신하고,
-          검색 시 사용자별 필터가 적용됩니다.
-        </p>
-      </div>
-
-      {progress && (
-        <div className="progress">
-          <div className="progress-bar" style={{ width: `${progress.percent ?? 25}%` }} />
-          <div className="progress-label">{progress.label}</div>
-        </div>
-      )}
-
-      <div className="stack">
-        <label className="stack">
-          <span>의미 검색어</span>
-          <input
-            className="input"
-            value={query}
-            placeholder="예: 이미지 최적화, GraphQL 클라이언트"
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                runSearch();
-              }
-            }}
-            disabled={disabled}
-          />
-        </label>
-        <div className="button-row">
-          <button onClick={runSearch} disabled={disabled || loading}>
-            {loading ? "검색 중..." : "검색"}
-          </button>
-          {session?.user?.name && (
-            <span className="badge">{session.user.name} 님</span>
-          )}
-        </div>
-      </div>
-
-      {message && <div className="alert">{message}</div>}
-
-      {results.length > 0 && (
-        <div className="stack">
-          <h3>검색 결과</h3>
-          <div className="stack">
-            {results.map((repo) => (
-              <article key={repo.id} className="repo-card">
-                <div className="title">
-                  <a href={repo.htmlUrl} target="_blank" rel="noreferrer">
-                    {repo.fullName}
-                  </a>
-                  <span className="badge">스코어 {repo.score.toFixed(3)}</span>
-                </div>
-                <p className="meta">{repo.description}</p>
-                <div className="button-row">
-                  {repo.language && <span className="badge">{repo.language}</span>}
-                  {repo.topics?.slice(0, 4).map((topic) => (
-                    <span key={topic} className="badge">
-                      {topic}
-                    </span>
-                  ))}
-                </div>
-              </article>
+    <div className="app-layout">
+      <aside className="sidebar">
+        <h3>Filters</h3>
+        <div className="filter-group">
+          <div className="filter-title">Language</div>
+          <div className="filter-options">
+            {"JavaScript,TypeScript,Python,Go".split(",").map((lang) => (
+              <label className="filter-option" key={lang}>
+                <input type="checkbox" disabled />
+                <span>{lang}</span>
+              </label>
             ))}
           </div>
         </div>
-      )}
+        <div className="filter-group">
+          <div className="filter-title">Stars</div>
+          <div className="filter-options">
+            {[
+              { value: "100", label: "> 100" },
+              { value: "50-100", label: "50-100" },
+              { value: "<50", label: "< 50" },
+            ].map((option) => (
+              <label className="filter-option" key={option.value}>
+                <input type="radio" name="stars" disabled />
+                <span>{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="filter-group">
+          <div className="filter-title">Last updated</div>
+          <div className="filter-options">
+            {["Past month", "Past 6 months", "Past year"].map((label) => (
+              <label className="filter-option" key={label}>
+                <input type="radio" name="updated" disabled />
+                <span>{label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="filter-group">
+          <div className="filter-title">Tags</div>
+          <div className="chip-row">
+            <span className="chip">next.js</span>
+            <span className="chip">template</span>
+            <span className="chip">ai</span>
+          </div>
+        </div>
+        <div className="filter-group" style={{ paddingBottom: 0 }}>
+          <div className="filter-title">연동</div>
+          <div className="filter-options">
+            {!isAuthed && (
+              <button className="button" onClick={() => signIn("github")}>GitHub 로그인</button>
+            )}
+            {isAuthed && (
+              <div className="search-actions" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                <button className="button" onClick={triggerSync} disabled={syncing}>
+                  {syncing ? "동기화 중..." : "별표 목록 동기화"}
+                </button>
+                <button className="button-ghost" onClick={() => signOut()}>로그아웃</button>
+              </div>
+            )}
+          </div>
+        </div>
+      </aside>
+
+      <section className="main-area">
+        <div className="search-header">
+          <div>
+            <h2>Search your stars</h2>
+            <p>설명, 기술 스택, 용도로 별표 목록을 바로 찾으세요.</p>
+          </div>
+          <div className="search-actions">
+            <span className="pill">Natural language</span>
+            <span className="pill">By example repo</span>
+            {userTag}
+          </div>
+        </div>
+
+        <div className="search-bar">
+          <div className="search-input-wrapper">
+            <span className="input-icon">🔍</span>
+            <input
+              className="input"
+              value={query}
+              placeholder="Search by description, tech stack, or use case..."
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  runSearch();
+                }
+              }}
+              disabled={disabled}
+            />
+          </div>
+          <div className="helper-text">
+            예: “fast API template with Redis cache” 또는 “TypeScript monorepo boilerplate”
+          </div>
+        </div>
+
+        <div className="search-actions" style={{ marginTop: 12 }}>
+          <button className="button" onClick={runSearch} disabled={disabled || loading}>
+            {loading ? "검색 중..." : "검색"}
+          </button>
+          <div className="badge">OpenAI 임베딩 + Pinecone</div>
+          <div className="badge">사용자별 네임스페이스</div>
+        </div>
+
+        {progress && (
+          <div className="progress">
+            <div className="progress-bar" style={{ width: `${progress.percent ?? 25}%` }} />
+            <div className="progress-label">{progress.label}</div>
+          </div>
+        )}
+
+        {message && <div className="info-banner">{message}</div>}
+
+        <div className="result-meta">
+          <span>
+            Results · {results.length} repositories
+            {hasSearched && results.length === 0 && " (no matches)"}
+          </span>
+          <select className="select" disabled>
+            <option>Sort: Relevance</option>
+            <option>Stars</option>
+            <option>Last updated</option>
+          </select>
+        </div>
+
+        <div className="results-grid">
+          {loading &&
+            Array.from({ length: 4 }).map((_, index) => <div className="skeleton-card" key={index} />)}
+
+          {!loading && results.length === 0 && hasSearched && (
+            <div className="empty-state">
+              <div style={{ fontSize: 18 }}>✨</div>
+              <div>검색어에 맞는 저장소가 없습니다.</div>
+              <div className="meta-text">키워드를 더 간단하게 입력해 보세요.</div>
+            </div>
+          )}
+
+          {!loading && !hasSearched && (
+            <div className="empty-state">
+              <div style={{ fontSize: 18 }}>🌌</div>
+              <div>Start typing a few words about the repo you remember.</div>
+              <div className="meta-text">설명, 언어, 토픽 등 무엇이든 좋습니다.</div>
+            </div>
+          )}
+
+          {!loading &&
+            results.map((repo) => {
+              const [owner, name] = repo.fullName.split("/");
+              return (
+                <article key={repo.id} className="repo-card">
+                  <div className="title-row">
+                    <div>
+                      <div className="owner">{owner}</div>
+                      <div className="name">{name}</div>
+                    </div>
+                    <a className="button-ghost" href={repo.htmlUrl} target="_blank" rel="noreferrer">
+                      Open on GitHub
+                    </a>
+                  </div>
+
+                  {repo.description && <p className="description">{repo.description}</p>}
+
+                  <div className="repo-meta">
+                    {repo.language && <span className="chip">{repo.language}</span>}
+                    <span>⭐ {repo.score.toFixed(3)}</span>
+                    {repo.topics?.length ? <span>{repo.topics.slice(0, 4).join(" · ")}</span> : null}
+                  </div>
+
+                  {repo.topics?.length ? (
+                    <div className="chip-row">
+                      {repo.topics.slice(0, 6).map((topic) => (
+                        <span key={topic} className="chip">
+                          {topic}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
+        </div>
+      </section>
     </div>
   );
 }
