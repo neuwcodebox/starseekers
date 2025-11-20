@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { signOut, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 
 type SyncProgress = {
   label: string;
@@ -143,7 +143,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
 
   return (
     <div className="app-layout">
-      <aside className="sidebar">
+      <section className="sync-panel">
         <div className="sidebar-section">
           <h3>Repository sync</h3>
           <p className="meta-text" style={{ margin: 0 }}>
@@ -163,12 +163,9 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
             <button className="button" onClick={triggerSync} disabled={syncing}>
               {syncing ? "Syncing..." : "Sync starred repositories"}
             </button>
-            <button className="button-ghost" onClick={() => signOut()}>
-              Sign out
-            </button>
           </div>
         </div>
-      </aside>
+      </section>
 
       <section className="main-area">
         <div className="search-header">
@@ -176,9 +173,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
             <h2>Search your stars</h2>
             <p>Use plain language to find starred repositories by description, stack, or use case.</p>
           </div>
-          <div className="search-actions">
-            {userTag}
-          </div>
+          <div className="search-actions">{userTag}</div>
         </div>
 
         <div className="search-bar">

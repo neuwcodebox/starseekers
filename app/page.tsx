@@ -41,9 +41,6 @@ export default async function Home() {
                 <Link href="/api/auth/signin">
                   <button className="button">Sign in with GitHub</button>
                 </Link>
-                <a className="button-ghost" href="#demo">
-                  View demo
-                </a>
               </div>
               <div className="hero-hint">We only read starred repository metadata—no write access.</div>
             </div>

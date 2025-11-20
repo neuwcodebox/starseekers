@@ -287,23 +287,11 @@ a {
 }
 
 .app-layout {
-  display: grid;
-  grid-template-columns: 280px 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 18px;
   margin-top: 24px;
-}
-
-@media (max-width: 960px) {
-  .app-layout {
-    grid-template-columns: 1fr;
-  }
-  .sidebar {
-    position: relative;
-    top: 0;
-  }
-  .topbar {
-    position: static;
-  }
+  align-items: center;
 }
 
 @media (max-width: 640px) {
@@ -329,20 +317,23 @@ a {
   }
 }
 
-.sidebar {
+.sync-panel {
   border: 1px solid var(--border-subtle);
   border-radius: 16px;
   padding: 16px;
-  background: linear-gradient(160deg, rgba(11, 16, 32, 0.95), rgba(11, 16, 32, 0.8));
-  height: fit-content;
+  background: linear-gradient(160deg, rgba(11, 16, 32, 0.95), rgba(11, 16, 32, 0.85));
+  width: min(960px, 100%);
+  box-shadow: var(--shadow-strong);
 }
 
 .sidebar-section {
   display: grid;
   gap: 12px;
+  text-align: center;
 }
 
-.sidebar h3 {
+.sidebar h3,
+.sync-panel h3 {
   margin: 0 0 14px;
   font-size: 14px;
   letter-spacing: 0.08em;
@@ -354,6 +345,7 @@ a {
   display: grid;
   gap: 10px;
   margin-top: 14px;
+  justify-items: center;
 }
 
 .filter-group {
@@ -398,14 +390,16 @@ a {
   padding: 18px;
   background: linear-gradient(165deg, rgba(11, 16, 32, 0.9), rgba(11, 16, 32, 0.78));
   box-shadow: var(--shadow-strong);
+  width: min(1040px, 100%);
 }
 
 .search-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 12px;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  text-align: center;
 }
 
 .search-header h2 {
@@ -425,6 +419,7 @@ a {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .search-bar {
@@ -433,7 +428,8 @@ a {
   align-items: center;
   gap: 10px;
   flex-wrap: nowrap;
-  width: 100%;
+  width: min(760px, 100%);
+  margin: 0 auto;
 }
 
 .search-input-wrapper {
@@ -465,7 +461,7 @@ a {
   margin-top: 12px;
 }
 
-.sidebar .progress {
+.sync-panel .progress {
   margin-top: 0;
 }
 
@@ -485,8 +481,9 @@ a {
   display: flex;
   align-items: center;
   gap: 10px;
-  justify-content: space-between;
-  margin: 18px 0 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 18px auto 12px;
   color: var(--text-secondary);
   font-size: 13px;
 }
