@@ -14,12 +14,6 @@ export default async function Home() {
           <span className="star">★</span>
           <span>starseekers</span>
         </div>
-        <div className="nav-links">
-          <a href="#how-it-works">How it works</a>
-          <a href="https://github.com" target="_blank" rel="noreferrer">
-            GitHub
-          </a>
-        </div>
         <div className="nav-actions">
           {!isAuthed && (
             <Link href="/api/auth/signin">
