@@ -5,7 +5,7 @@ import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: "Starseekers",
-  description: "GitHub 별표한 저장소를 의미 기반으로 검색할 수 있는 실험적 도구",
+  description: "Experimental semantic search across your starred GitHub repositories",
 };
 
 export default function RootLayout({
@@ -14,7 +14,7 @@ export default function RootLayout({
   children: ReactNode;
 }) {
   return (
-    <html lang="ko">
+    <html lang="en">
       <body>
         <Providers>
           <div className="page-shell">{children}</div>

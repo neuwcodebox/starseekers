@@ -53,11 +53,11 @@ export async function fetchStarredRepositories(
     );
 
     if (response.status === 401) {
-      throw new Error("GitHub 토큰이 만료되었거나 권한이 없습니다.");
+      throw new Error("GitHub token expired or lacks permissions.");
     }
 
     if (!response.ok) {
-      throw new Error(`GitHub API 요청 실패: ${response.statusText}`);
+      throw new Error(`GitHub API request failed: ${response.statusText}`);
     }
 
     const payload = (await response.json()) as GitHubRepoResponse[];
@@ -66,7 +66,7 @@ export async function fetchStarredRepositories(
       ...payload.map((repo) => ({
         id: repo.id,
         fullName: repo.full_name,
-        description: repo.description ?? "(설명 없음)",
+        description: repo.description ?? "(no description)",
         htmlUrl: repo.html_url,
         language: repo.language,
         topics: repo.topics ?? [],

@@ -22,7 +22,7 @@ export default async function Home() {
           )}
           {isAuthed && (
             <Link href="/api/auth/signout">
-              <button className="button-ghost">로그아웃</button>
+              <button className="button-ghost">Sign out</button>
             </Link>
           )}
         </div>
@@ -32,11 +32,10 @@ export default async function Home() {
         <>
           <section className="hero">
             <div className="hero-copy">
-              <div className="badge">GitHub 개발자를 위한 의미 기반 검색</div>
               <h1>Search your GitHub stars by meaning</h1>
               <p>
-                저장소 이름이 기억나지 않아도 걱정하지 마세요. 기억나는 설명, 기술 스택,
-                용도를 적으면 starseekers가 별표한 저장소에서 가장 맞는 결과를 찾아줍니다.
+                Forget exact repo names—describe the stack, use case, or what you remember and
+                starseekers will surface the right repositories from your stars.
               </p>
               <div className="hero-actions">
                 <Link href="/api/auth/signin">
@@ -46,7 +45,7 @@ export default async function Home() {
                   View demo
                 </a>
               </div>
-              <div className="hero-hint">우리는 별표한 저장소 메타데이터만 읽으며, 쓰기 권한은 없습니다.</div>
+              <div className="hero-hint">We only read starred repository metadata—no write access.</div>
             </div>
 
             <div className="mock-panel" id="demo">
@@ -91,29 +90,29 @@ export default async function Home() {
 
           <section className="hero" id="how-it-works">
             <div className="hero-copy">
-              <h2 className="section-title">딱 필요한 흐름만 단순하게</h2>
+              <h2 className="section-title">A focused flow, nothing extra</h2>
               <p className="meta-text">
-                GitHub OAuth로 로그인 → 별표한 저장소 동기화 → 의미 기반 검색. README까지 파싱하지
-                않고 설명/토픽/언어만 임베딩해 가볍게 동작합니다.
+                Sign in with GitHub → sync starred repositories → semantic search. We skip README
+                parsing and embed descriptions, topics, and language for a lightweight experience.
               </p>
               <div className="hero-actions">
-                <span className="pill">OpenAI 임베딩</span>
-                <span className="pill">Pinecone 벡터</span>
-                <span className="pill">개인 네임스페이스</span>
+                <span className="pill">OpenAI embeddings</span>
+                <span className="pill">Pinecone vectors</span>
+                <span className="pill">Per-user namespace</span>
               </div>
             </div>
             <div className="mock-panel">
               <div className="glow-card">
                 <h4>🔄 Sync</h4>
-                <p>별표한 저장소 메타데이터를 빠르게 불러옵니다.</p>
+                <p>Quickly fetch metadata for your starred repositories.</p>
               </div>
               <div className="glow-card">
                 <h4>🧠 Embed</h4>
-                <p>설명/토픽을 벡터화하여 개인 공간에 저장합니다.</p>
+                <p>Vectorize descriptions and topics into your personal space.</p>
               </div>
               <div className="glow-card">
                 <h4>🔍 Search</h4>
-                <p>자연어로 검색하고 바로 GitHub로 이동하세요.</p>
+                <p>Search in natural language and jump straight to GitHub.</p>
               </div>
             </div>
           </section>

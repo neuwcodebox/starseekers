@@ -43,7 +43,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
         {avatar}
         <div>
           <div>{session.user.name ?? session.user.email}</div>
-          <div style={{ color: "var(--text-muted)", fontSize: 12 }}>GitHub 연동 완료</div>
+          <div style={{ color: "var(--text-muted)", fontSize: 12 }}>Connected to GitHub</div>
         </div>
       </div>
     );
@@ -52,11 +52,11 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
   async function triggerSync() {
     setSyncing(true);
     setMessage(null);
-    setProgress({ label: "별표 목록 불러오는 중..." });
+    setProgress({ label: "Fetching starred repositories..." });
     try {
       const response = await fetch("/api/sync", { method: "POST" });
       if (!response.body) {
-        setMessage("동기화 스트림을 열 수 없습니다.");
+        setMessage("Unable to open sync stream.");
         return;
       }
 
@@ -76,32 +76,32 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
           const event = JSON.parse(line);
           switch (event.status) {
             case "start": {
-              setProgress({ label: "동기화 준비 중..." });
+              setProgress({ label: "Preparing sync..." });
               break;
             }
             case "fetch": {
               setProgress({
-                label: `별표 ${event.totalFetched}개 수집 (페이지 ${event.page})`,
+                label: `Fetched ${event.totalFetched} starred repos (page ${event.page})`,
               });
               break;
             }
             case "embed": {
               const percent = event.total ? Math.round((event.completed / event.total) * 100) : undefined;
-              setProgress({ label: "임베딩 생성 중...", percent });
+              setProgress({ label: "Creating embeddings...", percent });
               break;
             }
             case "upsert": {
               const percent = event.total ? Math.round((event.completed / event.total) * 100) : undefined;
-              setProgress({ label: "벡터 저장 중...", percent });
+              setProgress({ label: "Saving vectors...", percent });
               break;
             }
             case "complete": {
-              setMessage(`임베딩 ${event.synced}개 갱신 (총 ${event.total}개 보관)`);
-              setProgress({ label: "동기화 완료", percent: 100 });
+              setMessage(`Updated ${event.synced} embeddings (total stored: ${event.total})`);
+              setProgress({ label: "Sync complete", percent: 100 });
               break;
             }
             case "error": {
-              setMessage(event.message ?? "동기화 실패");
+              setMessage(event.message ?? "Sync failed");
               setProgress(null);
               break;
             }
@@ -111,7 +111,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
         }
       }
     } catch (error) {
-      setMessage(`동기화 중 오류 발생: ${String(error)}`);
+      setMessage(`Sync error: ${String(error)}`);
     } finally {
       setSyncing(false);
       setTimeout(() => setProgress(null), 1500);
@@ -120,7 +120,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
 
   async function runSearch() {
     if (!query.trim()) {
-      setMessage("검색어를 입력하세요.");
+      setMessage("Enter a search query.");
       return;
     }
     setLoading(true);
@@ -134,13 +134,13 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
       });
       const body = await response.json();
       if (!response.ok) {
-        setMessage(body.error ?? "검색 실패");
+        setMessage(body.error ?? "Search failed");
         setResults([]);
         return;
       }
       setResults(body.results ?? []);
     } catch (error) {
-      setMessage(`검색 중 오류: ${String(error)}`);
+      setMessage(`Search error: ${String(error)}`);
       setResults([]);
     } finally {
       setLoading(false);
@@ -197,17 +197,17 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
           </div>
         </div>
         <div className="filter-group" style={{ paddingBottom: 0 }}>
-          <div className="filter-title">연동</div>
+          <div className="filter-title">Connection</div>
           <div className="filter-options">
             {!isAuthed && (
-              <button className="button" onClick={() => signIn("github")}>GitHub 로그인</button>
+              <button className="button" onClick={() => signIn("github")}>Sign in with GitHub</button>
             )}
             {isAuthed && (
               <div className="search-actions" style={{ flexDirection: "column", alignItems: "stretch" }}>
                 <button className="button" onClick={triggerSync} disabled={syncing}>
-                  {syncing ? "동기화 중..." : "별표 목록 동기화"}
+                  {syncing ? "Syncing..." : "Sync starred repositories"}
                 </button>
-                <button className="button-ghost" onClick={() => signOut()}>로그아웃</button>
+                <button className="button-ghost" onClick={() => signOut()}>Sign out</button>
               </div>
             )}
           </div>
@@ -218,7 +218,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
         <div className="search-header">
           <div>
             <h2>Search your stars</h2>
-            <p>설명, 기술 스택, 용도로 별표 목록을 바로 찾으세요.</p>
+            <p>Use plain language to find starred repositories by description, stack, or use case.</p>
           </div>
           <div className="search-actions">
             <span className="pill">Natural language</span>
@@ -247,10 +247,10 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
 
         <div className="search-actions" style={{ marginTop: 12 }}>
           <button className="button" onClick={runSearch} disabled={disabled || loading}>
-            {loading ? "검색 중..." : "검색"}
+            {loading ? "Searching..." : "Search"}
           </button>
-          <div className="badge">OpenAI 임베딩 + Pinecone</div>
-          <div className="badge">사용자별 네임스페이스</div>
+          <div className="badge">OpenAI embeddings + Pinecone</div>
+          <div className="badge">Per-user namespace</div>
         </div>
 
         {progress && (
@@ -281,8 +281,8 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
           {!loading && results.length === 0 && hasSearched && (
             <div className="empty-state">
               <div style={{ fontSize: 18 }}>✨</div>
-              <div>검색어에 맞는 저장소가 없습니다.</div>
-              <div className="meta-text">키워드를 더 간단하게 입력해 보세요.</div>
+              <div>No repositories match this query.</div>
+              <div className="meta-text">Try fewer keywords or a broader description.</div>
             </div>
           )}
 
@@ -290,7 +290,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
             <div className="empty-state">
               <div style={{ fontSize: 18 }}>🌌</div>
               <div>Start typing a few words about the repo you remember.</div>
-              <div className="meta-text">설명, 언어, 토픽 등 무엇이든 좋습니다.</div>
+              <div className="meta-text">Description, language, topics—anything helps.</div>
             </div>
           )}
 

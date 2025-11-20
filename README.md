@@ -1,16 +1,16 @@
 # Starseekers
 
-GitHub OAuth로 로그인하면 본인이 별표해 둔 저장소를 임베딩하여 의미 기반으로 검색할 수 있는 Next.js 애플리케이션입니다. OpenAI 임베딩과 Pinecone 벡터 인덱스를 이용해 간단한 토이 프로젝트 느낌으로 구성했습니다.
+Starseekers is a Next.js application that embeds your starred GitHub repositories and lets you run semantic search across them. It uses OpenAI embeddings and a Pinecone vector index to stay lightweight and fast.
 
-## 주요 기능
-- GitHub OAuth로 로그인하여 개인 토큰 획득
-- 별표한 저장소 목록을 GitHub API로 동기화 후 Pinecone에 임베딩 저장
-- 설명/토픽/언어를 해시로 비교해 변경된 항목만 재생성
-- 검색어를 임베딩해 사용자 네임스페이스에서만 벡터 검색 수행
-- NextAuth + App Router 기반의 단일 페이지 UI
+## Features
+- Sign in with GitHub OAuth to obtain a user token
+- Sync the starred repository list via the GitHub API and store embeddings in Pinecone
+- Hash description/topic/language to regenerate only changed items
+- Embed queries and search vectors within a per-user namespace
+- Single-page UI powered by NextAuth and the App Router
 
-## 환경 변수
-`.env.local` 등에 다음 값을 설정하세요.
+## Environment variables
+Set the following values in `.env.local` (or similar):
 
 ```
 GITHUB_ID=<github oauth client id>
@@ -22,12 +22,12 @@ PINECONE_API_KEY=<pinecone key>
 PINECONE_INDEX=<pinecone index name>
 ```
 
-## 로컬 실행
+## Local development
 ```bash
 npm install
 npm run dev
 ```
 
-- `/api/sync`를 호출하면 별표 저장소 임베딩을 갱신합니다.
-- `/api/search`로 의미 검색을 수행합니다.
-- 기본 인덱스 이름은 `PINECONE_INDEX`가 없으면 `starseekers`를 사용합니다.
+- Call `/api/sync` to refresh embeddings for starred repositories.
+- Call `/api/search` to perform semantic search.
+- If `PINECONE_INDEX` is not set, the default index name `starseekers` is used.

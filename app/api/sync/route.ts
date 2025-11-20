@@ -17,7 +17,7 @@ export async function POST() {
   const user = session?.user;
 
   if (!user || !user.accessToken || !user.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+    return NextResponse.json({ error: "Sign-in required." }, { status: 401 });
   }
 
   const encoder = new TextEncoder();

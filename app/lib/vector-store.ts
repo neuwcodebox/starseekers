@@ -9,7 +9,7 @@ const EMBEDDING_BATCH_SIZE = 20;
 
 function getClient() {
   if (!process.env.PINECONE_API_KEY) {
-    throw new Error("PINECONE_API_KEY가 설정되어 있지 않습니다.");
+    throw new Error("PINECONE_API_KEY is not configured.");
   }
   return new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
 }
@@ -66,8 +66,8 @@ export type VectorSearchResult = {
 };
 
 function buildEmbeddingText(repo: StarredRepo) {
-  const topicLine = repo.topics.length > 0 ? `\n토픽: ${repo.topics.join(", ")}` : "";
-  const languageLine = repo.language ? `\n언어: ${repo.language}` : "";
+  const topicLine = repo.topics.length > 0 ? `\nTopics: ${repo.topics.join(", ")}` : "";
+  const languageLine = repo.language ? `\nLanguage: ${repo.language}` : "";
   return `${repo.fullName}\n${repo.description}${languageLine}${topicLine}`;
 }
 
