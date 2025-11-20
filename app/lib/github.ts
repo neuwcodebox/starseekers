@@ -21,6 +21,12 @@ export type StarredRepo = {
   updatedAt?: string;
 };
 
+type FetchProgress = {
+  page: number;
+  fetched: number;
+  totalFetched: number;
+};
+
 export function hashText(text: string) {
   return crypto.createHash("sha256").update(text).digest("hex");
 }
@@ -28,11 +34,12 @@ export function hashText(text: string) {
 export async function fetchStarredRepositories(
   accessToken: string,
   perPage = 100,
-  maxPages = 5
+  maxPages?: number,
+  onProgress?: (progress: FetchProgress) => void
 ): Promise<StarredRepo[]> {
   const repos: StarredRepo[] = [];
 
-  for (let page = 1; page <= maxPages; page += 1) {
+  for (let page = 1; !maxPages || page <= maxPages; page += 1) {
     const response = await fetch(
       `https://api.github.com/user/starred?per_page=${perPage}&page=${page}`,
       {
@@ -66,6 +73,8 @@ export async function fetchStarredRepositories(
         updatedAt: repo.updated_at,
       }))
     );
+
+    onProgress?.({ page, fetched: payload.length, totalFetched: repos.length });
 
     if (payload.length < perPage) {
       break;

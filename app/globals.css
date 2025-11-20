@@ -159,3 +159,23 @@ button:disabled {
   background: rgba(248, 113, 113, 0.12);
   border-color: rgba(248, 113, 113, 0.4);
 }
+
+.progress {
+  border: 1px solid var(--border);
+  background: #0b1222;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar {
+  height: 10px;
+  background: linear-gradient(90deg, #38bdf8, #818cf8);
+  transition: width 0.2s ease;
+}
+
+.progress-label {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
