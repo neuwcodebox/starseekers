@@ -3,6 +3,8 @@ import { embedText } from "./embeddings";
 import { StarredRepo, hashText } from "./github";
 
 const indexName = process.env.PINECONE_INDEX ?? "starseekers";
+// Pinecone upsert requests are limited to 2MB; batch uploads to stay below the limit.
+const UPSERT_BATCH_SIZE = 40;
 
 function getClient() {
   if (!process.env.PINECONE_API_KEY) {
@@ -114,7 +116,10 @@ export async function upsertRepositories(userId: string, repos: StarredRepo[]) {
   }
 
   if (records.length > 0) {
-    await index.upsert(records);
+    for (let i = 0; i < records.length; i += UPSERT_BATCH_SIZE) {
+      const batch = records.slice(i, i + UPSERT_BATCH_SIZE);
+      await index.upsert(batch);
+    }
   }
 
   if (metadataUpdates.length > 0) {
