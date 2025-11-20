@@ -237,6 +237,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
           {!loading &&
             results.map((repo) => {
               const [owner, name] = repo.fullName.split("/");
+              const language = repo.language?.trim();
               return (
                 <article key={repo.id} className="repo-card">
                   <div className="title-row">
@@ -244,23 +245,15 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
                       <div className="owner">{owner}</div>
                       <div className="name">{name}</div>
                     </a>
+
+                    <span className="score-badge">Score {repo.score.toFixed(3)}</span>
                   </div>
 
                   {repo.description && <p className="description">{repo.description}</p>}
 
-                  <div className="repo-meta">
-                    {repo.language && <span className="chip">{repo.language}</span>}
-                    <span className="score-badge">Score {repo.score.toFixed(3)}</span>
-                    {repo.topics?.length ? <span>{repo.topics.slice(0, 4).join(" · ")}</span> : null}
-                  </div>
-
-                  {repo.topics?.length ? (
-                    <div className="chip-row">
-                      {repo.topics.slice(0, 6).map((topic) => (
-                        <span key={topic} className="chip">
-                          {topic}
-                        </span>
-                      ))}
+                  {language ? (
+                    <div className="repo-meta">
+                      <span className="chip">{language}</span>
                     </div>
                   ) : null}
                 </article>
