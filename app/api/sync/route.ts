@@ -14,12 +14,15 @@ type SyncEvent =
 
 export async function POST() {
   const session = await getServerSession(authOptions);
+  const user = session?.user;
 
-  if (!session?.user?.accessToken || !session.user.id) {
+  if (!user || !user.accessToken || !user.id) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
 
   const encoder = new TextEncoder();
+
+  const { accessToken, id } = user;
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -30,7 +33,7 @@ export async function POST() {
       try {
         push({ status: "start" });
         const repos = await fetchStarredRepositories(
-          session.user.accessToken,
+          accessToken,
           100,
           undefined,
           ({ page, fetched, totalFetched }) => push({ status: "fetch", page, fetched, totalFetched })
@@ -44,7 +47,7 @@ export async function POST() {
           }
         };
 
-        const updated = await upsertRepositories(session.user.id, repos, onProgress);
+        const updated = await upsertRepositories(id, repos, onProgress);
 
         push({ status: "complete", synced: updated, total: repos.length });
       } catch (error) {
