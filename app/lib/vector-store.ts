@@ -39,7 +39,7 @@ async function fetchExistingRecords(
   repoIds: string[]
 ): Promise<Record<string, ExistingRecord>> {
   const client = getClient();
-  const index = client.Index(indexName);
+  const index = client.index<RepoMetadata>(indexName);
   const known: Record<string, ExistingRecord> = {};
 
   for (let i = 0; i < repoIds.length; i += 100) {
@@ -81,7 +81,7 @@ export async function upsertRepositories(
   }
 
   const client = getClient();
-  const index = client.Index(indexName);
+  const index = client.index<RepoMetadata>(indexName);
   const repoIds = repos.map((repo) => repo.id.toString());
   const known = await fetchExistingRecords(repoIds);
   const currentRepoIdSet = new Set(repoIds);
@@ -155,7 +155,11 @@ export async function upsertRepositories(
     for (let i = 0; i < records.length; i += UPSERT_BATCH_SIZE) {
       const batch = records.slice(i, i + UPSERT_BATCH_SIZE);
       await index.upsert(batch);
-      onProgress?.({ phase: "upserting", completed: Math.min(i + UPSERT_BATCH_SIZE, records.length), total: records.length });
+      onProgress?.({
+        phase: "upserting",
+        completed: Math.min(i + UPSERT_BATCH_SIZE, records.length),
+        total: records.length,
+      });
     }
   }
 
@@ -192,7 +196,7 @@ export async function upsertRepositories(
       detaches.map((match) => {
         const starredBy = (match.metadata?.starredBy as string[] | undefined) ?? [];
         const updatedStarredBy = starredBy.filter((id) => id !== userId);
-        const metadata: Record<string, string[]> = {
+        const metadata: Pick<RepoMetadata, "starredBy"> = {
           starredBy: updatedStarredBy,
         };
 
@@ -210,7 +214,7 @@ export async function queryByEmbedding(
   topK = 8
 ): Promise<VectorSearchResult[]> {
   const client = getClient();
-  const index = client.Index(indexName);
+  const index = client.index<RepoMetadata>(indexName);
   const response = await index.query({
     vector,
     topK,
