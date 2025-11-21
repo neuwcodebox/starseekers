@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto from 'node:crypto';
 
 type GitHubRepoResponse = {
   id: number;
@@ -28,32 +28,29 @@ type FetchProgress = {
 };
 
 export function hashText(text: string) {
-  return crypto.createHash("sha256").update(text).digest("hex");
+  return crypto.createHash('sha256').update(text).digest('hex');
 }
 
 export async function fetchStarredRepositories(
   accessToken: string,
   perPage = 100,
   maxPages?: number,
-  onProgress?: (progress: FetchProgress) => void
+  onProgress?: (progress: FetchProgress) => void,
 ): Promise<StarredRepo[]> {
   const repos: StarredRepo[] = [];
 
   for (let page = 1; !maxPages || page <= maxPages; page += 1) {
-    const response = await fetch(
-      `https://api.github.com/user/starred?per_page=${perPage}&page=${page}`,
-      {
-        headers: {
-          Accept: "application/vnd.github+json",
-          Authorization: `Bearer ${accessToken}`,
-          "X-GitHub-Api-Version": "2022-11-28",
-        },
-        cache: "no-store",
-      }
-    );
+    const response = await fetch(`https://api.github.com/user/starred?per_page=${perPage}&page=${page}`, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${accessToken}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+      cache: 'no-store',
+    });
 
     if (response.status === 401) {
-      throw new Error("GitHub token expired or lacks permissions.");
+      throw new Error('GitHub token expired or lacks permissions.');
     }
 
     if (!response.ok) {
@@ -66,12 +63,12 @@ export async function fetchStarredRepositories(
       ...payload.map((repo) => ({
         id: repo.id,
         fullName: repo.full_name,
-        description: repo.description ?? "(no description)",
+        description: repo.description ?? '(no description)',
         htmlUrl: repo.html_url,
         language: repo.language,
         topics: repo.topics ?? [],
         updatedAt: repo.updated_at,
-      }))
+      })),
     );
 
     onProgress?.({ page, fetched: payload.length, totalFetched: repos.length });

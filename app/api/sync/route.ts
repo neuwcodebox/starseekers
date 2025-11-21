@@ -1,23 +1,23 @@
-import { getServerSession } from "next-auth";
-import { NextResponse } from "next/server";
-import { authOptions } from "../auth/[...nextauth]/options";
-import { fetchStarredRepositories } from "../../lib/github";
-import { SyncProgressUpdate, upsertRepositories } from "../../lib/vector-store";
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { fetchStarredRepositories } from '../../lib/github';
+import { type SyncProgressUpdate, upsertRepositories } from '../../lib/vector-store';
+import { authOptions } from '../auth/[...nextauth]/options';
 
 type SyncEvent =
-  | { status: "start" }
-  | { status: "fetch"; page: number; fetched: number; totalFetched: number }
-  | { status: "embed"; completed: number; total: number }
-  | { status: "upsert"; completed: number; total: number }
-  | { status: "complete"; synced: number; total: number }
-  | { status: "error"; message: string };
+  | { status: 'start' }
+  | { status: 'fetch'; page: number; fetched: number; totalFetched: number }
+  | { status: 'embed'; completed: number; total: number }
+  | { status: 'upsert'; completed: number; total: number }
+  | { status: 'complete'; synced: number; total: number }
+  | { status: 'error'; message: string };
 
 export async function POST() {
   const session = await getServerSession(authOptions);
   const user = session?.user;
 
   if (!user || !user.accessToken || !user.id) {
-    return NextResponse.json({ error: "Sign-in required." }, { status: 401 });
+    return NextResponse.json({ error: 'Sign-in required.' }, { status: 401 });
   }
 
   const encoder = new TextEncoder();
@@ -31,27 +31,24 @@ export async function POST() {
       };
 
       try {
-        push({ status: "start" });
-        const repos = await fetchStarredRepositories(
-          accessToken,
-          100,
-          undefined,
-          ({ page, fetched, totalFetched }) => push({ status: "fetch", page, fetched, totalFetched })
+        push({ status: 'start' });
+        const repos = await fetchStarredRepositories(accessToken, 100, undefined, ({ page, fetched, totalFetched }) =>
+          push({ status: 'fetch', page, fetched, totalFetched }),
         );
 
         const onProgress = (update: SyncProgressUpdate) => {
-          if (update.phase === "embedding") {
-            push({ status: "embed", completed: update.completed, total: update.total });
+          if (update.phase === 'embedding') {
+            push({ status: 'embed', completed: update.completed, total: update.total });
           } else {
-            push({ status: "upsert", completed: update.completed, total: update.total });
+            push({ status: 'upsert', completed: update.completed, total: update.total });
           }
         };
 
         const updated = await upsertRepositories(id, repos, onProgress);
 
-        push({ status: "complete", synced: updated, total: repos.length });
+        push({ status: 'complete', synced: updated, total: repos.length });
       } catch (error) {
-        push({ status: "error", message: error instanceof Error ? error.message : String(error) });
+        push({ status: 'error', message: error instanceof Error ? error.message : String(error) });
       } finally {
         controller.close();
       }
@@ -60,8 +57,8 @@ export async function POST() {
 
   return new NextResponse(stream, {
     headers: {
-      "Content-Type": "application/x-ndjson",
-      "Cache-Control": "no-cache",
+      'Content-Type': 'application/x-ndjson',
+      'Cache-Control': 'no-cache',
     },
   });
 }

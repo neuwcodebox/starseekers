@@ -1,10 +1,10 @@
-import OpenAI from "openai";
+import OpenAI from 'openai';
 
 let client: OpenAI | null = null;
 
 function getClient() {
   if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY is not configured.");
+    throw new Error('OPENAI_API_KEY is not configured.');
   }
 
   if (!client) {
@@ -21,7 +21,7 @@ function trimText(text: string) {
 export async function embedText(text: string) {
   const openai = getClient();
   const response = await openai.embeddings.create({
-    model: "text-embedding-3-small",
+    model: 'text-embedding-3-small',
     input: trimText(text),
   });
 
@@ -35,7 +35,7 @@ export async function embedBatch(texts: string[]) {
 
   const openai = getClient();
   const response = await openai.embeddings.create({
-    model: "text-embedding-3-small",
+    model: 'text-embedding-3-small',
     input: texts.map((text) => trimText(text)),
   });
 

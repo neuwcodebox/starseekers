@@ -1,18 +1,14 @@
-import type { Metadata } from "next";
-import type { ReactNode } from "react";
-import "./globals.css";
-import { Providers } from "./providers";
+import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
+import './globals.css';
+import { Providers } from './providers';
 
 export const metadata: Metadata = {
-  title: "Starseekers",
-  description: "Experimental semantic search across your starred GitHub repositories",
+  title: 'Starseekers',
+  description: 'Experimental semantic search across your starred GitHub repositories',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>

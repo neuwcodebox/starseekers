@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from 'next-auth/react';
+import { useState } from 'react';
 
 type SyncProgress = {
   label: string;
@@ -19,8 +19,8 @@ export type SearchResult = {
 };
 
 export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
-  const { data: session, status } = useSession();
-  const [query, setQuery] = useState("");
+  const { status } = useSession();
+  const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
@@ -29,74 +29,78 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
   const [progress, setProgress] = useState<SyncProgress | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
 
-  const disabled = status === "loading" || !isAuthed;
+  const disabled = status === 'loading' || !isAuthed;
 
   async function triggerSync() {
     setSyncing(true);
     setSyncMessage(null);
-    setProgress({ label: "Fetching starred repositories..." });
+    setProgress({ label: 'Fetching starred repositories...' });
     try {
-      const response = await fetch("/api/sync", { method: "POST" });
+      const response = await fetch('/api/sync', { method: 'POST' });
       if (response.status === 429) {
-        setSyncMessage("Sync request limit exceeded. Please try again soon.");
+        setSyncMessage('Sync request limit exceeded. Please try again soon.');
         setProgress(null);
         return;
       }
 
       if (!response.ok) {
-        setSyncMessage("Sync failed. Please try again.");
+        setSyncMessage('Sync failed. Please try again.');
         setProgress(null);
         return;
       }
 
       if (!response.body) {
-        setSyncMessage("Unable to open sync stream.");
+        setSyncMessage('Unable to open sync stream.');
         setProgress(null);
         return;
       }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let buffer = "";
+      let buffer = '';
 
       while (true) {
         const { value, done } = await reader.read();
-        if (done) break;
+        if (done) {
+          break;
+        }
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
 
         for (const line of lines) {
-          if (!line.trim()) continue;
+          if (!line.trim()) {
+            continue;
+          }
           const event = JSON.parse(line);
           switch (event.status) {
-            case "start": {
-              setProgress({ label: "Preparing sync..." });
+            case 'start': {
+              setProgress({ label: 'Preparing sync...' });
               break;
             }
-            case "fetch": {
+            case 'fetch': {
               setProgress({
                 label: `Fetched ${event.totalFetched} starred repos (page ${event.page})`,
               });
               break;
             }
-            case "embed": {
+            case 'embed': {
               const percent = event.total ? Math.round((event.completed / event.total) * 100) : undefined;
-              setProgress({ label: "Creating embeddings...", percent });
+              setProgress({ label: 'Creating embeddings...', percent });
               break;
             }
-            case "upsert": {
+            case 'upsert': {
               const percent = event.total ? Math.round((event.completed / event.total) * 100) : undefined;
-              setProgress({ label: "Saving vectors...", percent });
+              setProgress({ label: 'Saving vectors...', percent });
               break;
             }
-            case "complete": {
+            case 'complete': {
               setSyncMessage(`Updated ${event.synced} embeddings (total stored: ${event.total})`);
-              setProgress({ label: "Sync complete", percent: 100 });
+              setProgress({ label: 'Sync complete', percent: 100 });
               break;
             }
-            case "error": {
-              setSyncMessage(event.message ?? "Sync failed");
+            case 'error': {
+              setSyncMessage(event.message ?? 'Sync failed');
               setProgress(null);
               break;
             }
@@ -115,28 +119,28 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
 
   async function runSearch() {
     if (!query.trim()) {
-      setSearchMessage("Enter a search query.");
+      setSearchMessage('Enter a search query.');
       return;
     }
     setLoading(true);
     setHasSearched(true);
     setSearchMessage(null);
     try {
-      const response = await fetch("/api/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query }),
       });
       const body = await response.json().catch(() => null);
 
       if (response.status === 429) {
-        setSearchMessage("Search request limit exceeded. Please try again soon.");
+        setSearchMessage('Search request limit exceeded. Please try again soon.');
         setResults([]);
         return;
       }
 
       if (!response.ok) {
-        setSearchMessage(body?.error ?? "Search failed");
+        setSearchMessage(body?.error ?? 'Search failed');
         setResults([]);
         return;
       }
@@ -168,8 +172,8 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
           {syncMessage && <div className="info-banner">{syncMessage}</div>}
 
           <div className="sidebar-actions">
-            <button className="button" onClick={triggerSync} disabled={syncing}>
-              {syncing ? "Syncing..." : "Sync starred repositories"}
+            <button className="button" type="button" onClick={triggerSync} disabled={syncing}>
+              {syncing ? 'Syncing...' : 'Sync starred repositories'}
             </button>
           </div>
         </div>
@@ -192,7 +196,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
               placeholder="Search by description, tech stack, or use case..."
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === "Enter") {
+                if (event.key === 'Enter') {
                   runSearch();
                 }
               }}
@@ -200,8 +204,8 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
             />
           </div>
 
-          <button className="button search-button" onClick={runSearch} disabled={disabled || loading}>
-            {loading ? "Searching..." : "Search"}
+          <button className="button search-button" type="button" onClick={runSearch} disabled={disabled || loading}>
+            {loading ? 'Searching...' : 'Search'}
           </button>
         </div>
 
@@ -210,14 +214,13 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
         <div className="result-meta">
           <span>
             Results · {results.length} repositories
-            {hasSearched && results.length === 0 && " (no matches)"}
+            {hasSearched && results.length === 0 && ' (no matches)'}
           </span>
           <span className="pill">Sorted by relevance</span>
         </div>
 
         <div className="results-grid">
-          {loading &&
-            Array.from({ length: 4 }).map((_, index) => <div className="skeleton-card" key={index} />)}
+          {loading && ['a', 'b', 'c', 'd'].map((key) => <div className="skeleton-card" key={key} />)}
 
           {!loading && results.length === 0 && hasSearched && (
             <div className="empty-state">
@@ -237,7 +240,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
 
           {!loading &&
             results.map((repo) => {
-              const [owner, name] = repo.fullName.split("/");
+              const [owner, name] = repo.fullName.split('/');
               const language = repo.language?.trim();
               const topics = repo.topics?.filter(Boolean) ?? [];
               const hasTopics = topics.length > 0;
@@ -259,7 +262,7 @@ export function SearchClient({ isAuthed }: { isAuthed: boolean }) {
                       {language && <span className="chip">{language}</span>}
                       {hasTopics && (
                         <span className="topics-text">
-                          <span className="topics-list">{topics.join(" • ")}</span>
+                          <span className="topics-list">{topics.join(' • ')}</span>
                         </span>
                       )}
                     </div>

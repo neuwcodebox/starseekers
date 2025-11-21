@@ -1,7 +1,7 @@
-import Link from "next/link";
-import { getServerSession } from "next-auth";
-import { SearchClient } from "./components/SearchClient";
-import { authOptions } from "./api/auth/[...nextauth]/options";
+import Link from 'next/link';
+import { getServerSession } from 'next-auth';
+import { authOptions } from './api/auth/[...nextauth]/options';
+import { SearchClient } from './components/SearchClient';
 
 export default async function Home() {
   const session = await getServerSession(authOptions);
@@ -17,12 +17,16 @@ export default async function Home() {
         <div className="nav-actions">
           {!isAuthed && (
             <Link href="/api/auth/signin">
-              <button className="button">Sign in</button>
+              <button className="button" type="button">
+                Sign in
+              </button>
             </Link>
           )}
           {isAuthed && (
             <Link href="/api/auth/signout">
-              <button className="button-ghost">Sign out</button>
+              <button className="button-ghost" type="button">
+                Sign out
+              </button>
             </Link>
           )}
         </div>
@@ -34,12 +38,14 @@ export default async function Home() {
             <div className="hero-copy">
               <h1>Search your GitHub stars by meaning</h1>
               <p>
-                Forget exact repo names—describe the stack, use case, or what you remember and
-                starseekers will surface the right repositories from your stars.
+                Forget exact repo names—describe the stack, use case, or what you remember and starseekers will surface
+                the right repositories from your stars.
               </p>
               <div className="hero-actions">
                 <Link href="/api/auth/signin">
-                  <button className="button">Sign in with GitHub</button>
+                  <button className="button" type="button">
+                    Sign in with GitHub
+                  </button>
                 </Link>
               </div>
               <div className="hero-hint">We only read starred repository metadata—no write access.</div>
@@ -50,11 +56,7 @@ export default async function Home() {
                 <div className="search-bar">
                   <div className="search-input-wrapper">
                     <span className="input-icon">🔍</span>
-                    <input
-                      className="input"
-                      placeholder="e.g. fast API template with Redis cache"
-                      disabled
-                    />
+                    <input className="input" placeholder="e.g. fast API template with Redis cache" disabled />
                   </div>
                 </div>
                 <div className="glow-card">
@@ -89,8 +91,8 @@ export default async function Home() {
             <div className="hero-copy">
               <h2 className="section-title">A focused flow, nothing extra</h2>
               <p className="meta-text">
-                Sign in with GitHub → sync starred repositories → semantic search. We skip README
-                parsing and embed descriptions, topics, and language for a lightweight experience.
+                Sign in with GitHub → sync starred repositories → semantic search. We skip README parsing and embed
+                descriptions, topics, and language for a lightweight experience.
               </p>
               <div className="hero-actions">
                 <span className="pill">OpenAI embeddings</span>

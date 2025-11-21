@@ -1,15 +1,15 @@
-import { Pinecone, type PineconeRecord } from "@pinecone-database/pinecone";
-import { embedBatch, embedText } from "./embeddings";
-import { StarredRepo, hashText } from "./github";
+import { Pinecone, type PineconeRecord } from '@pinecone-database/pinecone';
+import { embedBatch, embedText } from './embeddings';
+import { hashText, type StarredRepo } from './github';
 
-const indexName = process.env.PINECONE_INDEX ?? "starseekers";
+const indexName = process.env.PINECONE_INDEX ?? 'starseekers';
 // Pinecone upsert requests are limited to 2MB; batch uploads to stay below the limit.
 const UPSERT_BATCH_SIZE = 40;
 const EMBEDDING_BATCH_SIZE = 20;
 
 function getClient() {
   if (!process.env.PINECONE_API_KEY) {
-    throw new Error("PINECONE_API_KEY is not configured.");
+    throw new Error('PINECONE_API_KEY is not configured.');
   }
   return new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
 }
@@ -30,14 +30,12 @@ type RepoMetadata = {
 };
 
 export type SyncProgressUpdate = {
-  phase: "embedding" | "upserting";
+  phase: 'embedding' | 'upserting';
   completed: number;
   total: number;
 };
 
-async function fetchExistingRecords(
-  repoIds: string[]
-): Promise<Record<string, ExistingRecord>> {
+async function fetchExistingRecords(repoIds: string[]): Promise<Record<string, ExistingRecord>> {
   const client = getClient();
   const index = client.index<RepoMetadata>(indexName);
   const known: Record<string, ExistingRecord> = {};
@@ -66,15 +64,15 @@ export type VectorSearchResult = {
 };
 
 function buildEmbeddingText(repo: StarredRepo) {
-  const topicLine = repo.topics.length > 0 ? `\nTopics: ${repo.topics.join(", ")}` : "";
-  const languageLine = repo.language ? `\nLanguage: ${repo.language}` : "";
+  const topicLine = repo.topics.length > 0 ? `\nTopics: ${repo.topics.join(', ')}` : '';
+  const languageLine = repo.language ? `\nLanguage: ${repo.language}` : '';
   return `${repo.fullName}\n${repo.description}${languageLine}${topicLine}`;
 }
 
 export async function upsertRepositories(
   userId: string,
   repos: StarredRepo[],
-  onProgress?: (update: SyncProgressUpdate) => void
+  onProgress?: (update: SyncProgressUpdate) => void,
 ) {
   if (!repos.length) {
     return 0;
@@ -148,7 +146,7 @@ export async function upsertRepositories(
     });
 
     embeddedCount += batch.length;
-    onProgress?.({ phase: "embedding", completed: embeddedCount, total: toEmbed.length });
+    onProgress?.({ phase: 'embedding', completed: embeddedCount, total: toEmbed.length });
   }
 
   if (records.length > 0) {
@@ -156,7 +154,7 @@ export async function upsertRepositories(
       const batch = records.slice(i, i + UPSERT_BATCH_SIZE);
       await index.upsert(batch);
       onProgress?.({
-        phase: "upserting",
+        phase: 'upserting',
         completed: Math.min(i + UPSERT_BATCH_SIZE, records.length),
         total: records.length,
       });
@@ -166,15 +164,13 @@ export async function upsertRepositories(
   if (metadataUpdates.length > 0) {
     await Promise.all(
       metadataUpdates.map((update) =>
-        index.update({ id: update.id, metadata: { starredBy: update.starredBy, hash: update.hash } })
-      )
+        index.update({ id: update.id, metadata: { starredBy: update.starredBy, hash: update.hash } }),
+      ),
     );
   }
 
   // Remove user association from repositories that are no longer starred
-  const probeVector =
-    records[0]?.values ??
-    (await embedText("probe vector"));
+  const probeVector = records[0]?.values ?? (await embedText('probe vector'));
 
   while (true) {
     const existingUserAssociations = await index.query({
@@ -184,9 +180,7 @@ export async function upsertRepositories(
       includeMetadata: true,
     });
 
-    const detaches = (existingUserAssociations.matches ?? []).filter(
-      (match) => !currentRepoIdSet.has(match.id)
-    );
+    const detaches = (existingUserAssociations.matches ?? []).filter((match) => !currentRepoIdSet.has(match.id));
 
     if (detaches.length === 0) {
       break;
@@ -196,23 +190,19 @@ export async function upsertRepositories(
       detaches.map((match) => {
         const starredBy = (match.metadata?.starredBy as string[] | undefined) ?? [];
         const updatedStarredBy = starredBy.filter((id) => id !== userId);
-        const metadata: Pick<RepoMetadata, "starredBy"> = {
+        const metadata: Pick<RepoMetadata, 'starredBy'> = {
           starredBy: updatedStarredBy,
         };
 
         return index.update({ id: match.id, metadata });
-      })
+      }),
     );
   }
 
   return records.length;
 }
 
-export async function queryByEmbedding(
-  userId: string,
-  vector: number[],
-  topK = 8
-): Promise<VectorSearchResult[]> {
+export async function queryByEmbedding(userId: string, vector: number[], topK = 8): Promise<VectorSearchResult[]> {
   const client = getClient();
   const index = client.index<RepoMetadata>(indexName);
   const response = await index.query({
@@ -226,9 +216,9 @@ export async function queryByEmbedding(
     response.matches?.map((match) => ({
       id: match.id,
       score: match.score ?? 0,
-      fullName: (match.metadata?.fullName as string) ?? "",
-      description: (match.metadata?.description as string) ?? "",
-      htmlUrl: (match.metadata?.htmlUrl as string) ?? "",
+      fullName: (match.metadata?.fullName as string) ?? '',
+      description: (match.metadata?.description as string) ?? '',
+      htmlUrl: (match.metadata?.htmlUrl as string) ?? '',
       language: match.metadata?.language as string | null,
       topics: (match.metadata?.topics as string[]) ?? [],
     })) ?? []

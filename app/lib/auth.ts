@@ -1,15 +1,15 @@
-import { NextAuthOptions } from "next-auth";
-import GitHubProvider from "next-auth/providers/github";
+import type { NextAuthOptions } from 'next-auth';
+import GitHubProvider from 'next-auth/providers/github';
 
-const clientId = process.env.GITHUB_ID ?? "";
-const clientSecret = process.env.GITHUB_SECRET ?? "";
+const clientId = process.env.GITHUB_ID ?? '';
+const clientSecret = process.env.GITHUB_SECRET ?? '';
 
 export const authOptions: NextAuthOptions = {
   providers: [
     GitHubProvider({
       clientId,
       clientSecret,
-      authorization: { params: { scope: "read:user public_repo" } },
+      authorization: { params: { scope: 'read:user public_repo' } },
       profile(profile) {
         return {
           id: profile.id?.toString() ?? profile.login,
@@ -29,13 +29,13 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.sub ?? "";
+        session.user.id = token.sub ?? '';
         session.user.accessToken = (token as { accessToken?: string }).accessToken;
       }
       return session;
     },
   },
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
   },
 };
